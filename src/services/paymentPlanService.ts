@@ -101,7 +101,7 @@ export class PaymentPlanService {
     request: CreatePaymentPlanRequest
   ): Promise<CreatePaymentPlanResponse['data']> {
     const response = await this.makeRequest<CreatePaymentPlanResponse>(
-      '/payment-plans',
+      '/payment-plans?testMode=true',
       {
         method: 'POST',
         body: JSON.stringify(request),
@@ -114,4 +114,78 @@ export class PaymentPlanService {
 
     return response.data;
   }
+
+  static async getPlanDetails(planId: string): Promise<PlanDetailsResponse> {
+    const response = await this.makeRequest<{ success: boolean; data: PlanDetailsResponse }>(
+      `/payment-plans/${planId}/details`
+    );
+
+    if (!response.success) {
+      throw new Error('Failed to fetch plan details');
+    }
+
+    return response.data;
+  }
+
+  static async getPlanSchedule(planId: string): Promise<PaymentScheduleResponse> {
+    const response = await this.makeRequest<{ success: boolean; data: PaymentScheduleResponse }>(
+      `/payment-plans/${planId}/schedule`
+    );
+
+    if (!response.success) {
+      throw new Error('Failed to fetch payment schedule');
+    }
+
+    return response.data;
+  }
+}
+
+// Types for plan details and schedule
+export interface PlanDetailsResponse {
+  paymentPlan: {
+    id: string;
+    customer: {
+      _id: string;
+      name: string;
+      email: string;
+      phone: string;
+    };
+    principalAmount: number;
+    totalAmount: number;
+    monthlyPayment: number;
+    duration: number;
+    completedPayments: number;
+    remainingBalance: number;
+    status: 'active' | 'completed' | 'defaulted';
+    startDate: string;
+    endDate: string;
+  };
+  paymentSchedule: Array<{
+    id: string;
+    sequenceNumber: number;
+    scheduledDate: string;
+    amount: number;
+    status: 'completed' | 'pending' | 'failed';
+    processedDate?: string;
+    failureReason?: string;
+  }>;
+}
+
+export interface PaymentScheduleResponse {
+  summary: {
+    totalPayments: number;
+    completedPayments: number;
+    pendingPayments: number;
+    failedPayments: number;
+    nextPaymentDate: string;
+  };
+  schedule: Array<{
+    sequenceNumber: number;
+    scheduledDate: string;
+    amount: number;
+    status: 'completed' | 'pending' | 'failed';
+    processedDate?: string;
+    retryCount: number;
+    greenMoneyCheckId: string | null;
+  }>;
 }

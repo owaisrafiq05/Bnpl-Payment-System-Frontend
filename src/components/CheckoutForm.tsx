@@ -14,6 +14,19 @@ const CheckoutForm: React.FC = () => {
   // Form validation states
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Validation rules
+//   const validationRules = {
+//     customerName: { required: true, minLength: 2 },
+//     email: { required: true, email: true },
+//     phone: { required: true, pattern: /^\d{10}$/ },
+//     address1: { required: true },
+//     city: { required: true },
+//     state: { required: true, length: 2 },
+//     zip: { required: true, pattern: /^\d{5}$/ },
+//     routingNumber: { required: true, pattern: /^\d{9}$/ },
+//     accountNumber: { required: true, minLength: 4 }
+//   };
+
   // Initialize form data from global state
   useEffect(() => {
     if (state.formData.clientName) {
@@ -79,9 +92,44 @@ const CheckoutForm: React.FC = () => {
   };
 
   const handleInputChange = (field: keyof typeof state.checkoutData, value: string) => {
+    let processedValue = value;
+
+    // Real-time input validation and formatting
+    switch (field) {
+      case 'phone':
+        // Only allow digits
+        processedValue = value.replace(/\D/g, '').slice(0, 10);
+        break;
+      case 'zip':
+        // Only allow digits
+        processedValue = value.replace(/\D/g, '').slice(0, 5);
+        break;
+      case 'routingNumber':
+        // Only allow digits
+        processedValue = value.replace(/\D/g, '').slice(0, 9);
+        break;
+      case 'accountNumber':
+        // Only allow digits
+        processedValue = value.replace(/\D/g, '');
+        break;
+      case 'city':
+        // Only allow letters and spaces
+        processedValue = value.replace(/[^a-zA-Z\s]/g, '');
+        break;
+      case 'state':
+        // Only allow letters and convert to uppercase
+        processedValue = value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 2);
+        break;
+      case 'firstName':
+      case 'lastName':
+        // Only allow letters, spaces, hyphens, and apostrophes
+        processedValue = value.replace(/[^a-zA-Z\s'-]/g, '');
+        break;
+    }
+
     dispatch({
       type: 'UPDATE_CHECKOUT_DATA',
-      payload: { [field]: value }
+      payload: { [field]: processedValue }
     });
     
     // Clear error when user starts typing
@@ -134,9 +182,9 @@ const CheckoutForm: React.FC = () => {
       const response = await PaymentPlanService.createPaymentPlan(requestBody);
       
       toast.success('Payment plan created successfully!');
-      console.log('Payment plan created:', response);
       
-      // You can redirect to a success page or reset the form here
+      // Redirect to the plan details dashboard
+      window.location.href = `/plan-details/${response.paymentPlanId}`;
       
     } catch (error) {
       console.error('Error creating payment plan:', error);
