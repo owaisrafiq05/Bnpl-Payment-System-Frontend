@@ -97,19 +97,19 @@ const PaymentForm: React.FC = () => {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
         {/* Header Section */}
-        <div className="text-center mb-8">
+        <div className="text-left mb-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
             Pay Your Price
           </h1>
-          <p className="text-gray-600">
-            Enter an amount and pay securely.
-          </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Amount Input */}
           <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+          Enter an amount and pay securely
+            </label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">
                 $
@@ -154,7 +154,7 @@ const PaymentForm: React.FC = () => {
               <button
                 type="button"
                 onClick={toggleNoteInput}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:underline cursor-pointer"
+                className="text-gray-600 hover:text-blue-700 text-sm font-medium hover:underline cursor-pointer"
               >
                 Add a note
               </button>
