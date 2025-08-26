@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { usePaymentForm } from '../context/PaymentFormContext';
+import { PaymentPlanService } from '../services/paymentPlanService';
+import StepIndicator from './StepIndicator';
 
 const PaymentForm: React.FC = () => {
-  const [amount, setAmount] = useState('');
-  const [clientName, setClientName] = useState('');
-  const [note, setNote] = useState('');
+  const { state, dispatch } = usePaymentForm();
+  const [amount, setAmount] = useState(state.formData.amount);
+  const [clientName, setClientName] = useState(state.formData.clientName);
+  const [note, setNote] = useState(state.formData.note);
   const [showNoteInput, setShowNoteInput] = useState(false);
   
   // Validation states
@@ -13,6 +17,13 @@ const PaymentForm: React.FC = () => {
   
   // Form validity state
   const [isFormValid, setIsFormValid] = useState(false);
+
+  // Update local state when global state changes
+  useEffect(() => {
+    setAmount(state.formData.amount);
+    setClientName(state.formData.clientName);
+    setNote(state.formData.note);
+  }, [state.formData]);
 
   // Real-time validation for amount
   useEffect(() => {
@@ -65,12 +76,41 @@ const PaymentForm: React.FC = () => {
     setIsFormValid(isValid);
   }, [amount, clientName, amountError, clientNameError, noteError]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isFormValid) {
-      // Handle form submission logic here
-      console.log({ amount, clientName, note });
-      alert('Form submitted successfully!');
+      try {
+        // Save form data to global state
+        dispatch({
+          type: 'UPDATE_FORM_DATA',
+          payload: { amount, clientName, note }
+        });
+        
+        // Set loading state
+        dispatch({ type: 'SET_LOADING', payload: true });
+        dispatch({ type: 'SET_ERROR', payload: null });
+        
+        // Call API to calculate payment plans
+        const paymentPlans = await PaymentPlanService.calculatePaymentPlans({
+          principalAmount: parseFloat(amount),
+          customerName: clientName,
+        });
+        
+        // Save payment plans to global state
+        dispatch({ type: 'SET_PAYMENT_PLANS', payload: paymentPlans });
+        
+        // Navigate to payment plan selection
+        dispatch({ type: 'SET_CURRENT_STEP', payload: 2 });
+        
+      } catch (error) {
+        console.error('Error calculating payment plans:', error);
+        dispatch({ 
+          type: 'SET_ERROR', 
+          payload: error instanceof Error ? error.message : 'Failed to calculate payment plans' 
+        });
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
     }
   };
 
@@ -96,6 +136,9 @@ const PaymentForm: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+        {/* Step Indicator */}
+        <StepIndicator currentStep={state.currentStep} />
+        
         {/* Header Section */}
         <div className="text-left mb-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
@@ -107,8 +150,8 @@ const PaymentForm: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Amount Input */}
           <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-          Enter an amount and pay securely
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Enter an amount and pay securely
             </label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">
@@ -188,28 +231,44 @@ const PaymentForm: React.FC = () => {
             )}
           </div>
 
+          {/* Error Display */}
+          {state.error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-600 text-sm">{state.error}</p>
+            </div>
+          )}
+
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={!isFormValid}
+            disabled={!isFormValid || state.isLoading}
             className={`w-full font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-2 ${
-              isFormValid
+              isFormValid && !state.isLoading
                 ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
                 : 'bg-gray-400 text-gray-200 cursor-not-allowed'
             }`}
           >
-            <svg 
-              className="w-5 h-5" 
-              fill="currentColor" 
-              viewBox="0 0 20 20"
-            >
-              <path 
-                fillRule="evenodd" 
-                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" 
-                clipRule="evenodd" 
-              />
-            </svg>
-            <span>Proceed to secure payment</span>
+            {state.isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <span>Calculating...</span>
+              </>
+            ) : (
+              <>
+                <svg 
+                  className="w-5 h-5" 
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                >
+                  <path 
+                    fillRule="evenodd" 
+                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" 
+                    clipRule="evenodd" 
+                  />
+                </svg>
+                <span>Proceed to secure payment</span>
+              </>
+            )}
           </button>
         </form>
       </div>
