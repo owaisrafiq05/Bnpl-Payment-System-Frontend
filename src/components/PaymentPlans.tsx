@@ -1,6 +1,6 @@
 import React from 'react';
+import { usePaymentForm } from '../context/PaymentFormContext';
 import type { PaymentPlan } from '../context/PaymentFormContext';
-import StepIndicator from './StepIndicator';
 
 interface PaymentPlansProps {
   paymentPlans: {
@@ -18,8 +18,9 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({
   paymentPlans,
   onSelectPlan,
   onBack,
-  currentStep,
 }) => {
+  const { dispatch } = usePaymentForm();
+
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -27,12 +28,20 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({
     }).format(amount);
   };
 
+  const handlePlanSelection = (plan: PaymentPlan) => {
+    // Save selected plan to global state
+    dispatch({ type: 'SET_SELECTED_PLAN', payload: plan });
+    
+    // Navigate to checkout form (step 3)
+    dispatch({ type: 'SET_CURRENT_STEP', payload: 3 });
+    
+    // Call the onSelectPlan callback for any additional logic
+    onSelectPlan(plan);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-4xl">
-        {/* Step Indicator */}
-        <StepIndicator currentStep={currentStep} />
-        
         {/* Header Section */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
@@ -69,7 +78,7 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({
             <div
               key={plan.duration}
               className="border border-gray-200 rounded-lg p-6 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer"
-              onClick={() => onSelectPlan(plan)}
+              onClick={() => handlePlanSelection(plan)}
             >
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600 mb-2">

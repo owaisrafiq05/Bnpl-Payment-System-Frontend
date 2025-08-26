@@ -2,6 +2,7 @@ import React from 'react';
 import { usePaymentForm } from '../context/PaymentFormContext';
 import PaymentForm from '../components/PaymentForm';
 import PaymentPlans from '../components/PaymentPlans';
+import CheckoutForm from '../components/CheckoutForm';
 
 const MultiStepForm: React.FC = () => {
   const { state, dispatch } = usePaymentForm();
@@ -9,7 +10,6 @@ const MultiStepForm: React.FC = () => {
   const handleSelectPlan = (plan: any) => {
     // Handle plan selection - you can add more logic here
     console.log('Selected plan:', plan);
-    alert(`You selected the ${plan.duration}-month plan with monthly payment of $${plan.monthlyPayment}`);
   };
 
   const handleBackToForm = () => {
@@ -41,6 +41,8 @@ const MultiStepForm: React.FC = () => {
             </div>
           </div>
         );
+      case 3:
+        return <CheckoutForm />;
       default:
         return <PaymentForm />;
     }

@@ -7,6 +7,47 @@ export interface CalculatePaymentPlansRequest {
   customerName: string;
 }
 
+export interface CreatePaymentPlanRequest {
+  selectedPlan: {
+    duration: number;
+    totalAmount: number;
+    monthlyPayment: number;
+    interestAmount: number;
+  };
+  customerName: string;
+  email: string;
+  phone: string;
+  phoneExtension: string;
+  address1: string;
+  address2: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  routingNumber: string;
+  accountNumber: string;
+  bankName: string;
+}
+
+export interface CreatePaymentPlanResponse {
+  success: boolean;
+  data: {
+    paymentPlanId: string;
+    customerId: string;
+    planDetails: {
+      principalAmount: number;
+      totalAmount: number;
+      monthlyPayment: number;
+      duration: number;
+      interestRate: string;
+      interestAmount: number;
+      firstPaymentDate: string;
+      lastPaymentDate: string;
+    };
+    message: string;
+  };
+}
+
 export class PaymentPlanService {
   private static async makeRequest<T>(
     endpoint: string,
@@ -51,6 +92,24 @@ export class PaymentPlanService {
 
     if (!response.success) {
       throw new Error('Failed to calculate payment plans');
+    }
+
+    return response.data;
+  }
+
+  static async createPaymentPlan(
+    request: CreatePaymentPlanRequest
+  ): Promise<CreatePaymentPlanResponse['data']> {
+    const response = await this.makeRequest<CreatePaymentPlanResponse>(
+      '/payment-plans',
+      {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }
+    );
+
+    if (!response.success) {
+      throw new Error('Failed to create payment plan');
     }
 
     return response.data;
