@@ -146,6 +146,37 @@ export class PaymentPlanService {
     }
   }
 
+  static async processFullPayment(
+    formData: FormData
+  ): Promise<CreatePaymentPlanResponse['data']> {
+    const url = `${API_BASE_URL}/payment-plans/full-payment?testMode=true`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData, // Don't set Content-Type header - let browser set it with boundary
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json() as CreatePaymentPlanResponse;
+      
+      if (!result.success) {
+        throw new Error('Failed to process full payment');
+      }
+
+      return result.data;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`API request failed: ${error.message}`);
+      }
+      throw new Error('API request failed: Unknown error');
+    }
+  }
+
   static async getPlanDetails(planId: string): Promise<PlanDetailsResponse> {
     const response = await this.makeRequest<{ success: boolean; data: PlanDetailsResponse }>(
       `/payment-plans/${planId}/details`

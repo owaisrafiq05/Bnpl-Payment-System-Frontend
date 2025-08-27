@@ -249,15 +249,23 @@ const CheckoutForm: React.FC = () => {
       // Create FormData for file upload support
       const formData = new FormData();
       
-      // Add selected plan data
-      formData.append('selectedPlan', JSON.stringify({
-        duration: state.selectedPlan.duration,
-        totalAmount: state.selectedPlan.totalAmount,
-        monthlyPayment: state.selectedPlan.monthlyPayment,
-        interestAmount: state.selectedPlan.interestAmount
-      }));
+      // Check if this is a full payment (duration = 1) or installment plan
+      const isFullPayment = state.selectedPlan.duration === 1;
       
-      // Add customer data
+      if (isFullPayment) {
+        // For full payment API - use totalAmount field
+        formData.append('totalAmount', state.selectedPlan.totalAmount.toString());
+      } else {
+        // For installment payment API - use selectedPlan object
+        formData.append('selectedPlan', JSON.stringify({
+          duration: state.selectedPlan.duration,
+          totalAmount: state.selectedPlan.totalAmount,
+          monthlyPayment: state.selectedPlan.monthlyPayment,
+          interestAmount: state.selectedPlan.interestAmount
+        }));
+      }
+      
+      // Add customer data (same for both APIs)
       formData.append('customerName', state.formData.clientName);
       formData.append('email', state.checkoutData.email || '');
       formData.append('phone', state.checkoutData.phone || '');
@@ -296,9 +304,17 @@ const CheckoutForm: React.FC = () => {
       }
 
       setUploadProgress('Submitting payment plan...');
-      const response = await PaymentPlanService.createPaymentPlanWithFiles(formData);
       
-      toast.success('Payment plan created successfully!');
+      let response;
+      if (isFullPayment) {
+        // Use full payment API for immediate payment processing
+        response = await PaymentPlanService.processFullPayment(formData);
+        toast.success('Full payment processed successfully!');
+      } else {
+        // Use regular installment payment API
+        response = await PaymentPlanService.createPaymentPlanWithFiles(formData);
+        toast.success('Payment plan created successfully!');
+      }
       
       // Redirect to the plan details dashboard
       window.location.href = `/plan-details/${response.paymentPlanId}`;
@@ -606,15 +622,21 @@ const CheckoutForm: React.FC = () => {
                 <span className="font-medium text-gray-700">Subtotal</span>
               </div>
               <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
-                <span>{`$${state.selectedPlan.monthlyPayment} × ${state.selectedPlan.duration} months`}</span>
+                <span>
+                  {state.selectedPlan.duration === 1 
+                    ? 'Full Payment (Immediate)' 
+                    : `$${state.selectedPlan.monthlyPayment} × ${state.selectedPlan.duration} months`
+                  }
+                </span>
                 <span className="font-semibold text-gray-800">
                   {formatCurrency(state.formData.amount ? parseFloat(state.formData.amount) : 0)}
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
-                <span>Interest ({state.paymentPlans?.interestRate || '19%'})</span>
-                <span className="font-semibold text-gray-800">
+                <span>Interest ({state.selectedPlan.duration === 1 ? '0%' : state.paymentPlans?.interestRate || '19%'})</span>
+                <span className={`font-semibold ${state.selectedPlan.duration === 1 ? 'text-green-600' : 'text-gray-800'}`}>
                   {formatCurrency(state.selectedPlan.interestAmount)}
+                  {state.selectedPlan.duration === 1 && ' 🎉'}
                 </span>
               </div>
               <div className="flex justify-between items-center text-lg font-bold text-gray-800">
@@ -886,13 +908,13 @@ const CheckoutForm: React.FC = () => {
               disabled={!termsAccepted || isSubmitting}
               className={`w-full mt-6 py-3 px-6 rounded font-medium transition-colors ${
                 termsAccepted && !isSubmitting
-                  ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+                  ? (state.selectedPlan.duration === 1 ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700') + ' text-white'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
               {isSubmitting ? 
-                (uploadProgress || 'Creating Payment Plan...') : 
-                'Place order'
+                (uploadProgress || (state.selectedPlan.duration === 1 ? 'Processing Full Payment...' : 'Creating Payment Plan...')) : 
+                (state.selectedPlan.duration === 1 ? 'Pay Full Amount Now' : 'Place order')
               }
             </button>
           </div>
