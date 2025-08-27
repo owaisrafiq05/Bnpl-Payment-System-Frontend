@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Eye, CreditCard, DollarSign, Users, TrendingUp } from 'lucide-react';
+import { Search, Download, Eye } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -7,6 +7,7 @@ interface UserData {
   email: string;
   phone: string;
   status: 'active' | 'completed' | 'failed' | 'pending';
+  paymentType: 'single_payment' | '3_months' | '6_months' | '12_months';
   principalAmount: number;
   totalAmount: number;
   monthlyPayment: number;
@@ -25,7 +26,7 @@ const AdminPortal: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
 
@@ -38,13 +39,14 @@ const AdminPortal: React.FC = () => {
         email: 'john.doe@example.com',
         phone: '(555) 123-4567',
         status: 'active',
+        paymentType: '12_months',
         principalAmount: 5000,
         totalAmount: 5950,
-        monthlyPayment: 297.50,
+        monthlyPayment: 495.83,
         remainingBalance: 4165,
-        duration: 20,
+        duration: 12,
         completedPayments: 6,
-        totalPayments: 20,
+        totalPayments: 12,
         nextPaymentDate: '2024-02-15',
         createdDate: '2023-08-15',
         accountNumber: '****7890',
@@ -57,13 +59,14 @@ const AdminPortal: React.FC = () => {
         email: 'jane.smith@example.com',
         phone: '(555) 234-5678',
         status: 'completed',
+        paymentType: 'single_payment',
         principalAmount: 3000,
-        totalAmount: 3570,
-        monthlyPayment: 357,
+        totalAmount: 3000,
+        monthlyPayment: 3000,
         remainingBalance: 0,
-        duration: 10,
-        completedPayments: 10,
-        totalPayments: 10,
+        duration: 1,
+        completedPayments: 1,
+        totalPayments: 1,
         nextPaymentDate: '-',
         createdDate: '2023-06-10',
         accountNumber: '****2345',
@@ -76,13 +79,14 @@ const AdminPortal: React.FC = () => {
         email: 'mike.johnson@example.com',
         phone: '(555) 345-6789',
         status: 'pending',
+        paymentType: '6_months',
         principalAmount: 7500,
-        totalAmount: 8925,
-        monthlyPayment: 297.50,
+        totalAmount: 7800,
+        monthlyPayment: 1300,
         remainingBalance: 7500,
-        duration: 30,
+        duration: 6,
         completedPayments: 0,
-        totalPayments: 30,
+        totalPayments: 6,
         nextPaymentDate: '2024-01-20',
         createdDate: '2024-01-05',
         accountNumber: '****5678',
@@ -95,13 +99,14 @@ const AdminPortal: React.FC = () => {
         email: 'sarah.wilson@example.com',
         phone: '(555) 456-7890',
         status: 'failed',
+        paymentType: '3_months',
         principalAmount: 4500,
-        totalAmount: 5355,
-        monthlyPayment: 267.75,
+        totalAmount: 4650,
+        monthlyPayment: 1550,
         remainingBalance: 4232.25,
-        duration: 20,
+        duration: 3,
         completedPayments: 1,
-        totalPayments: 20,
+        totalPayments: 3,
         nextPaymentDate: '2024-01-25',
         createdDate: '2023-12-25',
         accountNumber: '****9012',
@@ -114,18 +119,59 @@ const AdminPortal: React.FC = () => {
         email: 'david.brown@example.com',
         phone: '(555) 567-8901',
         status: 'active',
+        paymentType: '12_months',
         principalAmount: 6000,
         totalAmount: 7140,
-        monthlyPayment: 357,
+        monthlyPayment: 595,
         remainingBalance: 5355,
-        duration: 20,
+        duration: 12,
         completedPayments: 5,
-        totalPayments: 20,
+        totalPayments: 12,
         nextPaymentDate: '2024-02-10',
         createdDate: '2023-09-10',
         accountNumber: '****3456',
         routingNumber: '321654987',
         bankName: 'PNC Bank'
+      },
+      {
+        id: 'PLN006',
+        name: 'Emily Davis',
+        email: 'emily.davis@example.com',
+        phone: '(555) 678-9012',
+        status: 'completed',
+        paymentType: 'single_payment',
+        principalAmount: 2500,
+        totalAmount: 2500,
+        monthlyPayment: 2500,
+        remainingBalance: 0,
+        duration: 1,
+        completedPayments: 1,
+        totalPayments: 1,
+        nextPaymentDate: '-',
+        createdDate: '2023-11-20',
+        accountNumber: '****1234',
+        routingNumber: '654321987',
+        bankName: 'TD Bank'
+      },
+      {
+        id: 'PLN007',
+        name: 'Robert Garcia',
+        email: 'robert.garcia@example.com',
+        phone: '(555) 789-0123',
+        status: 'active',
+        paymentType: '6_months',
+        principalAmount: 8000,
+        totalAmount: 8320,
+        monthlyPayment: 1386.67,
+        remainingBalance: 6933.33,
+        duration: 6,
+        completedPayments: 1,
+        totalPayments: 6,
+        nextPaymentDate: '2024-02-05',
+        createdDate: '2024-01-05',
+        accountNumber: '****5679',
+        routingNumber: '987123654',
+        bankName: 'US Bank'
       }
     ];
 
@@ -151,16 +197,46 @@ const AdminPortal: React.FC = () => {
     });
   };
 
-  // Filter users based on search and status
+  const formatPaymentType = (paymentType: string): string => {
+    switch (paymentType) {
+      case 'single_payment':
+        return 'Single Payment';
+      case '3_months':
+        return '3 Months';
+      case '6_months':
+        return '6 Months';
+      case '12_months':
+        return '12 Months';
+      default:
+        return paymentType;
+    }
+  };
+
+  const getPaymentTypeColor = (paymentType: string): string => {
+    switch (paymentType) {
+      case 'single_payment':
+        return 'bg-green-100 text-green-800';
+      case '3_months':
+        return 'bg-blue-100 text-blue-800';
+      case '6_months':
+        return 'bg-yellow-100 text-yellow-800';
+      case '12_months':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Filter users based on search and payment type
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.id.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+    const matchesPaymentType = paymentTypeFilter === 'all' || user.paymentType === paymentTypeFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesPaymentType;
   });
 
   // Pagination
@@ -169,13 +245,7 @@ const AdminPortal: React.FC = () => {
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
-  // Statistics
-  const stats = {
-    totalUsers: users.length,
-    activeUsers: users.filter(u => u.status === 'active').length,
-    totalPrincipal: users.reduce((sum, u) => sum + u.principalAmount, 0),
-    totalRevenue: users.reduce((sum, u) => sum + (u.totalAmount - u.remainingBalance), 0)
-  };
+
 
   if (loading) {
     return (
@@ -195,67 +265,7 @@ const AdminPortal: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-800">Admin Portal</h1>
               <p className="text-gray-600 mt-1">Manage payment plans and user accounts</p>
             </div>
-            <div className="mt-4 md:mt-0 flex space-x-3">
-              <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                <Filter className="h-4 w-4 mr-2" />
-                Export
-              </button>
-              <button className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700 transition-colors">
-                <Download className="h-4 w-4 mr-2" />
-                Download Report
-              </button>
-            </div>
-          </div>
-        </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Users className="h-8 w-8 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold text-gray-800">{stats.totalUsers}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <TrendingUp className="h-8 w-8 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Plans</p>
-                <p className="text-2xl font-bold text-gray-800">{stats.activeUsers}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CreditCard className="h-8 w-8 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Principal</p>
-                <p className="text-2xl font-bold text-gray-800">{formatCurrency(stats.totalPrincipal)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <DollarSign className="h-8 w-8 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Revenue Collected</p>
-                <p className="text-2xl font-bold text-gray-800">{formatCurrency(stats.totalRevenue)}</p>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -275,15 +285,15 @@ const AdminPortal: React.FC = () => {
               </div>
               
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                value={paymentTypeFilter}
+                onChange={(e) => setPaymentTypeFilter(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-                <option value="pending">Pending</option>
-                <option value="failed">Failed</option>
+                <option value="all">All Payment Types</option>
+                <option value="single_payment">Single Payment</option>
+                <option value="3_months">3 Months</option>
+                <option value="6_months">6 Months</option>
+                <option value="12_months">12 Months</option>
               </select>
             </div>
             
@@ -304,7 +314,7 @@ const AdminPortal: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Financial Info</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Progress</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank Info</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Type</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -364,15 +374,10 @@ const AdminPortal: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Status */}
+                    {/* Payment Type */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.status === 'active' ? 'bg-green-100 text-green-800' :
-                        user.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                        user.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentTypeColor(user.paymentType)}`}>
+                        {formatPaymentType(user.paymentType)}
                       </span>
                     </td>
 
