@@ -14,6 +14,7 @@ const CheckoutForm: React.FC = () => {
   const [signatureData, setSignatureData] = useState<string>('');
   const [signatureCanvas, setSignatureCanvas] = useState<HTMLCanvasElement | null>(null);
   const [inactivityTimer, setInactivityTimer] = useState<number | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
 
   // Form validation states
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -90,6 +91,12 @@ const CheckoutForm: React.FC = () => {
     if (!state.checkoutData.bankName?.trim()) {
       newErrors.bankName = 'Bank name is required';
     }
+    if (!photoIdFile) {
+      newErrors.photoId = 'Photo ID is required';
+    }
+    if (!signatureData) {
+      newErrors.signature = 'Digital signature is required';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -145,25 +152,49 @@ const CheckoutForm: React.FC = () => {
   const handlePhotoIdUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('File size must be less than 10MB');
+        return;
+      }
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Please select a valid image file (JPEG, PNG, GIF) or PDF');
+        return;
+      }
+      
       setPhotoIdFile(file);
       console.log('Photo ID uploaded:', file.name, file.size, file.type);
+      toast.success(`Photo ID "${file.name}" uploaded successfully`);
+      
+      // Clear error when file is uploaded
+      if (errors.photoId) {
+        setErrors(prev => ({ ...prev, photoId: '' }));
+      }
     }
   };
 
   const handleSignatureChange = (signature: string) => {
     setSignatureData(signature);
     
+    // Clear error when signature is added
+    if (errors.signature) {
+      setErrors(prev => ({ ...prev, signature: '' }));
+    }
+    
     // Clear existing timer
     if (inactivityTimer) {
       clearTimeout(inactivityTimer);
     }
     
-    // Set new timer for 5 seconds of inactivity
+    // Set new timer for 3 seconds of inactivity
     const timer = setTimeout(() => {
-      console.log('Signature data after 5 seconds of inactivity:', signature);
+      console.log('Signature data after 3 seconds of inactivity:', signature);
       console.log('Signature length (characters):', signature.length);
       console.log('Signature timestamp:', new Date().toISOString());
-    }, 5000);
+    }, 3000);
     
     setInactivityTimer(timer);
   };
@@ -212,31 +243,60 @@ const CheckoutForm: React.FC = () => {
     }
 
     setIsSubmitting(true);
+    setUploadProgress('Preparing submission...');
     
     try {
-      const requestBody = {
-        selectedPlan: {
-          duration: state.selectedPlan.duration,
-          totalAmount: state.selectedPlan.totalAmount,
-          monthlyPayment: state.selectedPlan.monthlyPayment,
-          interestAmount: state.selectedPlan.interestAmount
-        },
-        customerName: state.formData.clientName,
-        email: state.checkoutData.email,
-        phone: state.checkoutData.phone,
-        phoneExtension: "",
-        address1: state.checkoutData.address1,
-        address2: state.checkoutData.address2,
-        city: state.checkoutData.city,
-        state: state.checkoutData.state,
-        zip: state.checkoutData.zip,
-        country: state.checkoutData.country,
-        routingNumber: state.checkoutData.routingNumber,
-        accountNumber: state.checkoutData.accountNumber,
-        bankName: state.checkoutData.bankName
-      };
+      // Create FormData for file upload support
+      const formData = new FormData();
+      
+      // Add selected plan data
+      formData.append('selectedPlan', JSON.stringify({
+        duration: state.selectedPlan.duration,
+        totalAmount: state.selectedPlan.totalAmount,
+        monthlyPayment: state.selectedPlan.monthlyPayment,
+        interestAmount: state.selectedPlan.interestAmount
+      }));
+      
+      // Add customer data
+      formData.append('customerName', state.formData.clientName);
+      formData.append('email', state.checkoutData.email || '');
+      formData.append('phone', state.checkoutData.phone || '');
+      formData.append('phoneExtension', '');
+      formData.append('address1', state.checkoutData.address1 || '');
+      formData.append('address2', state.checkoutData.address2 || '');
+      formData.append('city', state.checkoutData.city || '');
+      formData.append('state', state.checkoutData.state || '');
+      formData.append('zip', state.checkoutData.zip || '');
+      formData.append('country', state.checkoutData.country || 'US');
+      formData.append('routingNumber', state.checkoutData.routingNumber || '');
+      formData.append('accountNumber', state.checkoutData.accountNumber || '');
+      formData.append('bankName', state.checkoutData.bankName || '');
+      
+      // Add files if present
+      if (photoIdFile) {
+        setUploadProgress('Processing photo ID...');
+        formData.append('photoId', photoIdFile);
+        console.log('Adding Photo ID file to submission:', photoIdFile.name);
+      }
+      
+      // Convert signature canvas to blob and add if present
+      if (signatureData && signatureCanvas) {
+        try {
+          setUploadProgress('Processing digital signature...');
+          // Convert canvas data URL to blob synchronously
+          const dataURL = signatureCanvas.toDataURL('image/png', 0.8);
+          const response = await fetch(dataURL);
+          const blob = await response.blob();
+          formData.append('digitalSignature', blob, 'signature.png');
+          console.log('Adding digital signature to submission');
+        } catch (signatureError) {
+          console.warn('Could not convert signature to blob:', signatureError);
+          console.warn('Could not process digital signature, continuing without it');
+        }
+      }
 
-      const response = await PaymentPlanService.createPaymentPlan(requestBody);
+      setUploadProgress('Submitting payment plan...');
+      const response = await PaymentPlanService.createPaymentPlanWithFiles(formData);
       
       toast.success('Payment plan created successfully!');
       
@@ -248,6 +308,7 @@ const CheckoutForm: React.FC = () => {
       toast.error(error instanceof Error ? error.message : 'Failed to create payment plan');
     } finally {
       setIsSubmitting(false);
+      setUploadProgress('');
     }
   };
 
@@ -348,9 +409,11 @@ const CheckoutForm: React.FC = () => {
               {/* Upload Photo ID */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload Photo ID
+                  Upload Photo ID <span className="text-red-500">*</span>
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <div className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-gray-400 transition-colors ${
+                  photoIdFile ? 'border-green-300 bg-green-50' : errors.photoId ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}>
                   <input
                     type="file"
                     accept="image/*,.pdf"
@@ -365,7 +428,9 @@ const CheckoutForm: React.FC = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span className="text-sm font-medium">{photoIdFile.name}</span>
-                        <p className="text-xs text-gray-500 mt-1">Click to change file</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {(photoIdFile.size / 1024 / 1024).toFixed(2)} MB • Click to change
+                        </p>
                       </div>
                     ) : (
                       <div className="text-gray-500">
@@ -373,11 +438,14 @@ const CheckoutForm: React.FC = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                         <span className="text-sm font-medium text-gray-600">Select File or Drag & Drop</span>
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG, PDF up to 10MB</p>
+                        <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF, PDF up to 10MB</p>
                       </div>
                     )}
                   </label>
                 </div>
+                {errors.photoId && (
+                  <p className="text-red-500 text-xs mt-1">{errors.photoId}</p>
+                )}
               </div>
 
               {/* Country */}
@@ -685,9 +753,11 @@ const CheckoutForm: React.FC = () => {
             {/* E-Signature */}
             <div className='mt-8'>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ✍️ Your Signature (Required)
+                  ✍️ Your Digital Signature <span className="text-red-500">*</span>
                 </label>
-                <div className="bg-white border-2 border-gray-300 rounded-lg p-4">
+                <div className={`bg-white border-2 rounded-lg p-4 ${
+                  errors.signature ? 'border-red-300' : 'border-gray-300'
+                }`}>
                   <div className="bg-gray-50 border border-gray-200 rounded-lg min-h-[150px] relative">
                     <canvas
                       ref={(canvas) => {
@@ -795,7 +865,20 @@ const CheckoutForm: React.FC = () => {
                     <p className="text-xs text-gray-500">Sign with mouse, touch, or stylus</p>
                   </div>
                 </div>
+                {errors.signature && (
+                  <p className="text-red-500 text-xs mt-1">{errors.signature}</p>
+                )}
               </div>
+
+            {/* Upload Progress */}
+            {uploadProgress && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-sm text-blue-700">{uploadProgress}</span>
+                </div>
+              </div>
+            )}
 
             {/* Place Order Button */}
             <button 
@@ -807,7 +890,10 @@ const CheckoutForm: React.FC = () => {
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {isSubmitting ? 'Creating Payment Plan...' : 'Place order'}
+              {isSubmitting ? 
+                (uploadProgress || 'Creating Payment Plan...') : 
+                'Place order'
+              }
             </button>
           </div>
         </div>
