@@ -1,7 +1,7 @@
 import React from 'react';
 import { usePaymentForm } from '../context/PaymentFormContext';
 import type { PaymentPlan } from '../context/PaymentFormContext';
-import { CreditCard, CheckCircle } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 
 interface PaymentPlansProps {
   paymentPlans: {
@@ -38,26 +38,6 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({
     
     // Call the onSelectPlan callback for any additional logic
     onSelectPlan(plan);
-  };
-
-  const handleFullPaymentSelection = () => {
-    // Create a special plan object for full payment
-    const fullPaymentPlan: PaymentPlan = {
-      duration: 1,
-      description: 'Full Payment - No Interest',
-      monthlyPayment: paymentPlans.principalAmount,
-      totalAmount: paymentPlans.principalAmount,
-      interestAmount: 0
-    };
-
-    // Save the full payment plan to global state
-    dispatch({ type: 'SET_SELECTED_PLAN', payload: fullPaymentPlan });
-    
-    // Navigate to checkout form (step 3)
-    dispatch({ type: 'SET_CURRENT_STEP', payload: 3 });
-    
-    // Call the onSelectPlan callback
-    onSelectPlan(fullPaymentPlan);
   };
 
   return (
@@ -101,7 +81,6 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {/* Installment Plans */}
             {paymentPlans.availablePlans.map((plan) => (
               <div
                 key={plan.duration}
@@ -139,57 +118,6 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({
                 </div>
               </div>
             ))}
-
-            {/* Full Payment Card */}
-            <div
-              className="border-2 border-green-200 bg-green-50 rounded-lg p-6 hover:border-green-300 hover:shadow-md transition-all duration-200 cursor-pointer relative"
-              onClick={handleFullPaymentSelection}
-            >
-              <div className="absolute top-2 right-2">
-                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                  BEST VALUE
-                </span>
-              </div>
-              
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <CheckCircle className="h-8 w-8 text-green-600 mr-2" />
-                  <div className="text-3xl font-bold text-green-600">
-                    FULL
-                  </div>
-                </div>
-                <div className="text-sm text-gray-600 mb-4">Pay in Full - No Interest</div>
-                
-                <div className="space-y-3">
-                  <div className="bg-white rounded-lg p-3 border border-green-200">
-                    <p className="text-xs text-gray-600">One-time Payment</p>
-                    <p className="text-lg font-semibold text-gray-800">
-                      {formatCurrency(paymentPlans.principalAmount)}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg p-3 border border-green-200">
-                    <p className="text-xs text-gray-600">Total Amount</p>
-                    <p className="text-lg font-semibold text-gray-800">
-                      {formatCurrency(paymentPlans.principalAmount)}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg p-3 border border-green-200">
-                    <p className="text-xs text-gray-600">Interest Amount</p>
-                    <p className="text-sm font-semibold text-green-600">
-                      $0.00 🎉
-                    </p>
-                  </div>
-                  
-                  <div className="bg-green-100 rounded-lg p-2 border border-green-300">
-                    <p className="text-xs text-green-700 font-semibold">
-                      Save {formatCurrency(paymentPlans.availablePlans[0]?.interestAmount || 0)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
