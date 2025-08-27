@@ -316,8 +316,9 @@ const CheckoutForm: React.FC = () => {
         toast.success('Payment plan created successfully!');
       }
       
-      // Redirect to the plan details dashboard
-      window.location.href = `/plan-details/${response.paymentPlanId}`;
+      // Redirect to the admin portal
+      window.location.href = `/admin`;
+      
       
     } catch (error) {
       console.error('Error creating payment plan:', error);

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Download, Eye } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { PaymentPlanService, type PaymentPlanData } from '../services/paymentPlanService';
 
 interface UserData {
   id: string;
@@ -25,160 +27,119 @@ interface UserData {
 const AdminPortal: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
+  const navigate = useNavigate();
 
-  // Mock data - Replace with actual API call
+  // Fetch real data from API
   useEffect(() => {
-    const mockUsers: UserData[] = [
-      {
-        id: 'PLN001',
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        phone: '(555) 123-4567',
-        status: 'active',
-        paymentType: '12_months',
-        principalAmount: 5000,
-        totalAmount: 5950,
-        monthlyPayment: 495.83,
-        remainingBalance: 4165,
-        duration: 12,
-        completedPayments: 6,
-        totalPayments: 12,
-        nextPaymentDate: '2024-02-15',
-        createdDate: '2023-08-15',
-        accountNumber: '****7890',
-        routingNumber: '123456789',
-        bankName: 'Chase Bank'
-      },
-      {
-        id: 'PLN002',
-        name: 'Jane Smith',
-        email: 'jane.smith@example.com',
-        phone: '(555) 234-5678',
-        status: 'completed',
-        paymentType: 'single_payment',
-        principalAmount: 3000,
-        totalAmount: 3000,
-        monthlyPayment: 3000,
-        remainingBalance: 0,
-        duration: 1,
-        completedPayments: 1,
-        totalPayments: 1,
-        nextPaymentDate: '-',
-        createdDate: '2023-06-10',
-        accountNumber: '****2345',
-        routingNumber: '987654321',
-        bankName: 'Bank of America'
-      },
-      {
-        id: 'PLN003',
-        name: 'Mike Johnson',
-        email: 'mike.johnson@example.com',
-        phone: '(555) 345-6789',
-        status: 'pending',
-        paymentType: '6_months',
-        principalAmount: 7500,
-        totalAmount: 7800,
-        monthlyPayment: 1300,
-        remainingBalance: 7500,
-        duration: 6,
-        completedPayments: 0,
-        totalPayments: 6,
-        nextPaymentDate: '2024-01-20',
-        createdDate: '2024-01-05',
-        accountNumber: '****5678',
-        routingNumber: '456789123',
-        bankName: 'Wells Fargo'
-      },
-      {
-        id: 'PLN004',
-        name: 'Sarah Wilson',
-        email: 'sarah.wilson@example.com',
-        phone: '(555) 456-7890',
-        status: 'failed',
-        paymentType: '3_months',
-        principalAmount: 4500,
-        totalAmount: 4650,
-        monthlyPayment: 1550,
-        remainingBalance: 4232.25,
-        duration: 3,
-        completedPayments: 1,
-        totalPayments: 3,
-        nextPaymentDate: '2024-01-25',
-        createdDate: '2023-12-25',
-        accountNumber: '****9012',
-        routingNumber: '789123456',
-        bankName: 'Citibank'
-      },
-      {
-        id: 'PLN005',
-        name: 'David Brown',
-        email: 'david.brown@example.com',
-        phone: '(555) 567-8901',
-        status: 'active',
-        paymentType: '12_months',
-        principalAmount: 6000,
-        totalAmount: 7140,
-        monthlyPayment: 595,
-        remainingBalance: 5355,
-        duration: 12,
-        completedPayments: 5,
-        totalPayments: 12,
-        nextPaymentDate: '2024-02-10',
-        createdDate: '2023-09-10',
-        accountNumber: '****3456',
-        routingNumber: '321654987',
-        bankName: 'PNC Bank'
-      },
-      {
-        id: 'PLN006',
-        name: 'Emily Davis',
-        email: 'emily.davis@example.com',
-        phone: '(555) 678-9012',
-        status: 'completed',
-        paymentType: 'single_payment',
-        principalAmount: 2500,
-        totalAmount: 2500,
-        monthlyPayment: 2500,
-        remainingBalance: 0,
-        duration: 1,
-        completedPayments: 1,
-        totalPayments: 1,
-        nextPaymentDate: '-',
-        createdDate: '2023-11-20',
-        accountNumber: '****1234',
-        routingNumber: '654321987',
-        bankName: 'TD Bank'
-      },
-      {
-        id: 'PLN007',
-        name: 'Robert Garcia',
-        email: 'robert.garcia@example.com',
-        phone: '(555) 789-0123',
-        status: 'active',
-        paymentType: '6_months',
-        principalAmount: 8000,
-        totalAmount: 8320,
-        monthlyPayment: 1386.67,
-        remainingBalance: 6933.33,
-        duration: 6,
-        completedPayments: 1,
-        totalPayments: 6,
-        nextPaymentDate: '2024-02-05',
-        createdDate: '2024-01-05',
-        accountNumber: '****5679',
-        routingNumber: '987123654',
-        bankName: 'US Bank'
-      }
-    ];
+    const fetchPaymentPlans = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await PaymentPlanService.getAllPaymentPlans(1, 100);
+        
+        // Debug: Log the actual API response structure
+        console.log('API Response:', response);
+        console.log('First plan data:', response.data[0]);
+        
+        // Check if response has data array
+        if (!response.data || !Array.isArray(response.data)) {
+          throw new Error('Invalid API response format: missing data array');
+        }
 
-    setTimeout(() => {
-      setUsers(mockUsers);
-      setLoading(false);
-    }, 1000);
+        // Transform API data to UserData format
+        const transformedUsers: UserData[] = response.data.map((plan: PaymentPlanData, index: number) => {
+          try {
+          // Safely handle bank details with fallbacks
+          const bankDetails = plan.customerId?.bankDetails || {};
+          const accountNumber = bankDetails.accountNumber || 'N/A';
+          const maskedAccountNumber = accountNumber !== 'N/A' ? `****${accountNumber.slice(-4)}` : 'N/A';
+          
+          // Calculate next payment date (for active plans)
+          let nextPaymentDate = '-';
+          if (plan.status === 'active' && 
+              plan.completedPayments !== undefined && 
+              plan.totalPayments !== undefined && 
+              plan.startDate &&
+              plan.completedPayments < plan.totalPayments) {
+            const startDate = new Date(plan.startDate);
+            const nextPaymentMonth = startDate.getMonth() + plan.completedPayments + 1;
+            const nextPayment = new Date(startDate.getFullYear(), nextPaymentMonth, startDate.getDate());
+            nextPaymentDate = nextPayment.toISOString().split('T')[0];
+          }
+
+          // Map plan duration to payment type
+          const getPaymentType = (duration: number): string => {
+            switch (duration) {
+              case 1: return 'single_payment';
+              case 3: return '3_months';
+              case 6: return '6_months';
+              case 12: return '12_months';
+              default: return `${duration}_months`;
+            }
+          };
+
+          return {
+            id: plan._id,
+            name: plan.customerId?.name || 'Unknown',
+            email: plan.customerId?.email || 'N/A',
+            phone: plan.customerId?.phone || 'N/A',
+            status: plan.status as 'active' | 'completed' | 'failed' | 'pending',
+            paymentType: getPaymentType(plan.planDuration || 1) as 'single_payment' | '3_months' | '6_months' | '12_months',
+            principalAmount: plan.principalAmount || 0,
+            totalAmount: plan.totalAmountWithInterest || 0,
+            monthlyPayment: plan.monthlyPayment || 0,
+            remainingBalance: plan.remainingBalance || 0,
+            duration: plan.planDuration || 0,
+            completedPayments: plan.completedPayments || 0,
+            totalPayments: plan.totalPayments || 0,
+            nextPaymentDate,
+            createdDate: plan.createdAt ? plan.createdAt.split('T')[0] : 'N/A',
+            accountNumber: maskedAccountNumber,
+            routingNumber: bankDetails.routingNumber || 'N/A',
+            bankName: bankDetails.bankName || 'N/A'
+          };
+          } catch (transformError) {
+            console.error(`Error transforming plan ${index}:`, transformError, plan);
+            // Return a fallback user object for this plan
+            return {
+              id: plan._id || `plan-${index}`,
+              name: 'Error Loading User',
+              email: 'N/A',
+              phone: 'N/A',
+              status: 'pending' as const,
+              paymentType: 'single_payment' as const,
+              principalAmount: 0,
+              totalAmount: 0,
+              monthlyPayment: 0,
+              remainingBalance: 0,
+              duration: 0,
+              completedPayments: 0,
+              totalPayments: 0,
+              nextPaymentDate: '-',
+              createdDate: 'N/A',
+              accountNumber: 'N/A',
+              routingNumber: 'N/A',
+              bankName: 'N/A'
+            };
+          }
+        });
+
+        setUsers(transformedUsers);
+      } catch (err) {
+        console.error('Error fetching payment plans:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch payment plans');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPaymentPlans();
   }, []);
 
   const formatCurrency = (amount: number): string => {
@@ -245,12 +206,36 @@ const AdminPortal: React.FC = () => {
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
+  // Handle row click to navigate to plan details
+  const handleRowClick = (planId: string) => {
+    navigate(`/plan-details/${planId}`);
+  };
+
 
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white p-6 rounded-lg shadow-sm max-w-md w-full">
+          <div className="text-red-600 text-center">
+            <h2 className="text-xl font-semibold mb-2">Error Loading Data</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -312,15 +297,16 @@ const AdminPortal: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Info</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan Details</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Financial Info</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Progress</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank Info</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {currentUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr 
+                    key={user.id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleRowClick(user.id)}
+                  >
                     {/* User Info */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -349,46 +335,11 @@ const AdminPortal: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Payment Progress */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm text-gray-900">{user.completedPayments}/{user.totalPayments}</div>
-                        <div className="w-16 bg-gray-200 rounded-full h-2 mt-1">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full" 
-                            style={{ width: `${(user.completedPayments / user.totalPayments) * 100}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-xs text-gray-400 mt-1">
-                          Next: {formatDate(user.nextPaymentDate)}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Bank Info */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm text-gray-900">{user.bankName}</div>
-                        <div className="text-sm text-gray-500">Acc: {user.accountNumber}</div>
-                        <div className="text-xs text-gray-400">Routing: {user.routingNumber}</div>
-                      </div>
-                    </td>
-
                     {/* Payment Type */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentTypeColor(user.paymentType)}`}>
                         {formatPaymentType(user.paymentType)}
                       </span>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900 mr-3">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button className="text-gray-600 hover:text-gray-900">
-                        <Download className="h-4 w-4" />
-                      </button>
                     </td>
                   </tr>
                 ))}

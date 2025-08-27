@@ -200,6 +200,18 @@ export class PaymentPlanService {
 
     return response.data;
   }
+
+  static async getAllPaymentPlans(page: number = 1, limit: number = 100): Promise<PaymentPlansListResponse> {
+    const response = await this.makeRequest<PaymentPlansListResponse>(
+      `/payment-plans?page=${page}&limit=${limit}`
+    );
+
+    if (!response.success) {
+      throw new Error('Failed to fetch payment plans');
+    }
+
+    return response;
+  }
 }
 
 // Types for plan details and schedule
@@ -250,4 +262,53 @@ export interface PaymentScheduleResponse {
     retryCount: number;
     greenMoneyCheckId: string | null;
   }>;
+}
+
+export interface PaymentPlanData {
+  _id: string;
+  customerId?: {
+    _id: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: {
+      address1: string;
+      address2?: string;
+      city: string;
+      state: string;
+      zip: string;
+      country: string;
+    };
+    bankDetails?: {
+      routingNumber?: string;
+      accountNumber?: string;
+      bankName?: string;
+    };
+  };
+  principalAmount?: number;
+  interestRate?: number;
+  totalAmountWithInterest?: number;
+  monthlyPayment?: number;
+  planDuration?: number;
+  startDate?: string;
+  endDate?: string;
+  totalPayments?: number;
+  completedPayments?: number;
+  remainingBalance?: number;
+  status: 'active' | 'completed' | 'cancelled';
+  createdAt?: string;
+  updatedAt?: string;
+  __v?: number;
+}
+
+export interface PaymentPlansListResponse {
+  success: boolean;
+  count: number;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+  data: PaymentPlanData[];
 }
