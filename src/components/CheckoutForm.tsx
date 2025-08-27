@@ -10,6 +10,10 @@ const CheckoutForm: React.FC = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showCoupon, setShowCoupon] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [photoIdFile, setPhotoIdFile] = useState<File | null>(null);
+  const [signatureData, setSignatureData] = useState<string>('');
+  const [signatureCanvas, setSignatureCanvas] = useState<HTMLCanvasElement | null>(null);
+  const [inactivityTimer, setInactivityTimer] = useState<number | null>(null);
 
   // Form validation states
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -137,6 +141,59 @@ const CheckoutForm: React.FC = () => {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
+
+  const handlePhotoIdUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setPhotoIdFile(file);
+      console.log('Photo ID uploaded:', file.name, file.size, file.type);
+    }
+  };
+
+  const handleSignatureChange = (signature: string) => {
+    setSignatureData(signature);
+    
+    // Clear existing timer
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+    }
+    
+    // Set new timer for 5 seconds of inactivity
+    const timer = setTimeout(() => {
+      console.log('Signature data after 5 seconds of inactivity:', signature);
+      console.log('Signature length (characters):', signature.length);
+      console.log('Signature timestamp:', new Date().toISOString());
+    }, 5000);
+    
+    setInactivityTimer(timer);
+  };
+
+  const clearSignature = () => {
+    if (signatureCanvas) {
+      const ctx = signatureCanvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+      }
+    }
+    setSignatureData('');
+    
+    // Clear timer when signature is cleared
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+      setInactivityTimer(null);
+    }
+    
+    console.log('Signature cleared');
+  };
+
+  // Cleanup timer on component unmount
+  useEffect(() => {
+    return () => {
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+      }
+    };
+  }, [inactivityTimer]);
 
   const handleSubmit = async () => {
     if (!validateForm()) {
@@ -285,6 +342,41 @@ const CheckoutForm: React.FC = () => {
                   {errors.lastName && (
                     <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
                   )}
+                </div>
+              </div>
+
+              {/* Upload Photo ID */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Photo ID
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handlePhotoIdUpload}
+                    className="hidden"
+                    id="photo-id-upload"
+                  />
+                  <label htmlFor="photo-id-upload" className="cursor-pointer">
+                    {photoIdFile ? (
+                      <div className="text-green-600">
+                        <svg className="mx-auto h-8 w-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm font-medium">{photoIdFile.name}</span>
+                        <p className="text-xs text-gray-500 mt-1">Click to change file</p>
+                      </div>
+                    ) : (
+                      <div className="text-gray-500">
+                        <svg className="mx-auto h-8 w-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span className="text-sm font-medium text-gray-600">Select File or Drag & Drop</span>
+                        <p className="text-xs text-gray-500 mt-1">PNG, JPG, PDF up to 10MB</p>
+                      </div>
+                    )}
+                  </label>
                 </div>
               </div>
 
@@ -589,6 +681,121 @@ const CheckoutForm: React.FC = () => {
                 </span>
               </label>
             </div>
+
+            {/* E-Signature */}
+            <div className='mt-8'>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ✍️ Your Signature (Required)
+                </label>
+                <div className="bg-white border-2 border-gray-300 rounded-lg p-4">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg min-h-[150px] relative">
+                    <canvas
+                      ref={(canvas) => {
+                        if (canvas && canvas !== signatureCanvas) {
+                          setSignatureCanvas(canvas);
+                          const ctx = canvas.getContext('2d');
+                          let isDrawing = false;
+                          let lastX = 0;
+                          let lastY = 0;
+
+                          // Set canvas size
+                          const rect = canvas.getBoundingClientRect();
+                          canvas.width = rect.width;
+                          canvas.height = 150;
+
+                          // Set drawing context properties
+                          if (ctx) {
+                            ctx.strokeStyle = '#000';
+                            ctx.lineWidth = 2;
+                            ctx.lineCap = 'round';
+                            ctx.lineJoin = 'round';
+                            ctx.imageSmoothingEnabled = true;
+                          }
+
+                          const getEventPos = (e: MouseEvent | TouchEvent) => {
+                            const rect = canvas.getBoundingClientRect();
+                            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+                            const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+                            return {
+                              x: (clientX - rect.left) * (canvas.width / rect.width),
+                              y: (clientY - rect.top) * (canvas.height / rect.height)
+                            };
+                          };
+
+                          const startDrawing = (e: MouseEvent | TouchEvent) => {
+                            e.preventDefault();
+                            isDrawing = true;
+                            const pos = getEventPos(e);
+                            lastX = pos.x;
+                            lastY = pos.y;
+                            
+                            if (ctx) {
+                              ctx.beginPath();
+                              ctx.moveTo(lastX, lastY);
+                            }
+                          };
+
+                          const draw = (e: MouseEvent | TouchEvent) => {
+                            e.preventDefault();
+                            if (!isDrawing || !ctx) return;
+                            
+                            const pos = getEventPos(e);
+                            
+                            ctx.lineTo(pos.x, pos.y);
+                            ctx.stroke();
+                            
+                            lastX = pos.x;
+                            lastY = pos.y;
+                          };
+
+                          const stopDrawing = (e: MouseEvent | TouchEvent) => {
+                            e.preventDefault();
+                            if (!isDrawing) return;
+                            isDrawing = false;
+                            
+                            if (ctx) {
+                              ctx.closePath();
+                            }
+
+                            // Get signature data and handle it after drawing stops
+                            const signatureDataUrl = canvas.toDataURL();
+                            handleSignatureChange(signatureDataUrl);
+                          };
+
+                          // Mouse events
+                          canvas.addEventListener('mousedown', startDrawing);
+                          canvas.addEventListener('mousemove', draw);
+                          canvas.addEventListener('mouseup', stopDrawing);
+                          canvas.addEventListener('mouseleave', stopDrawing);
+
+                          // Touch events for mobile
+                          canvas.addEventListener('touchstart', startDrawing);
+                          canvas.addEventListener('touchmove', draw);
+                          canvas.addEventListener('touchend', stopDrawing);
+                          canvas.addEventListener('touchcancel', stopDrawing);
+                        }
+                      }}
+                      className="w-full h-[150px] cursor-crosshair"
+                      style={{ touchAction: 'none' }}
+                    />
+                    {!signatureData && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <p className="text-gray-400 text-sm">Sign with mouse, touch, or stylus</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 flex justify-between items-center">
+                    <button
+                      type="button"
+                      onClick={clearSignature}
+                      className="px-4 py-2 bg-gray-500 text-white text-sm rounded hover:bg-gray-600 transition-colors"
+                    >
+                      Clear Signature
+                    </button>
+                    <p className="text-xs text-gray-500">Sign with mouse, touch, or stylus</p>
+                  </div>
+                </div>
+              </div>
 
             {/* Place Order Button */}
             <button 
