@@ -305,14 +305,13 @@ const CheckoutForm: React.FC = () => {
 
       setUploadProgress('Submitting payment plan...');
       
-      let response;
       if (isFullPayment) {
         // Use full payment API for immediate payment processing
-        response = await PaymentPlanService.processFullPayment(formData);
+        await PaymentPlanService.processFullPayment(formData);
         toast.success('Full payment processed successfully!');
       } else {
         // Use regular installment payment API
-        response = await PaymentPlanService.createPaymentPlanWithFiles(formData);
+        await PaymentPlanService.createPaymentPlanWithFiles(formData);
         toast.success('Payment plan created successfully!');
       }
       
