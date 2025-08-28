@@ -1,138 +1,176 @@
-import React from 'react';
-import { usePaymentForm } from '../context/PaymentFormContext';
-import type { PaymentPlan } from '../context/PaymentFormContext';
-import { CreditCard } from 'lucide-react';
+"use client"
+
+import type React from "react"
+import { usePaymentForm } from "../context/PaymentFormContext"
+import type { PaymentPlan } from "../context/PaymentFormContext"
+import { ArrowLeft, CheckCircle, Clock } from "lucide-react"
 
 interface PaymentPlansProps {
   paymentPlans: {
-    customerName: string;
-    principalAmount: number;
-    interestRate: string;
-    availablePlans: PaymentPlan[];
-  };
-  onSelectPlan: (plan: PaymentPlan) => void;
-  onBack: () => void;
-  currentStep: number;
+    customerName: string
+    principalAmount: number
+    interestRate: string
+    availablePlans: PaymentPlan[]
+  }
+  onSelectPlan: (plan: PaymentPlan) => void
+  onBack: () => void
+  currentStep: number
 }
 
-const PaymentPlans: React.FC<PaymentPlansProps> = ({
-  paymentPlans,
-  onSelectPlan,
-  onBack,
-}) => {
-  const { dispatch } = usePaymentForm();
+const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan, onBack }) => {
+  const { dispatch } = usePaymentForm()
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount)
+  }
 
   const handlePlanSelection = (plan: PaymentPlan) => {
     // Save selected plan to global state
-    dispatch({ type: 'SET_SELECTED_PLAN', payload: plan });
-    
+    dispatch({ type: "SET_SELECTED_PLAN", payload: plan })
+
     // Navigate to checkout form (step 3)
-    dispatch({ type: 'SET_CURRENT_STEP', payload: 3 });
-    
+    dispatch({ type: "SET_CURRENT_STEP", payload: 3 })
+
     // Call the onSelectPlan callback for any additional logic
-    onSelectPlan(plan);
-  };
+    onSelectPlan(plan)
+  }
+
+  const sortedPlans = [...paymentPlans.availablePlans].sort((a, b) => {
+    if (a.duration === 1) return 1 // Full payment goes last
+    if (b.duration === 1) return -1 // Full payment goes last
+    return a.duration - b.duration // Sort installments by duration
+  })
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Choose Your Payment Plan
-          </h1>
-          <p className="text-gray-600">
-            Select a payment plan that works best for you
-          </p>
-        </div>
-
-        {/* Summary Section */}
-        <div className="bg-blue-50 rounded-lg p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-sm text-gray-600">Customer</p>
-              <p className="text-lg font-semibold text-gray-800">{paymentPlans.customerName}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Principal Amount</p>
-              <p className="text-lg font-semibold text-gray-800">
-                {formatCurrency(paymentPlans.principalAmount)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Interest Rate</p>
-              <p className="text-lg font-semibold text-gray-800">{paymentPlans.interestRate}</p>
-            </div>
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-blue-400 text-white p-4 rounded-t-lg mb-8">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">💳</span>
+            <span className="text-sm font-medium">Choose the perfect payment plan for your needs</span>
           </div>
         </div>
 
-        {/* Payment Plans Grid */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-          <div className="flex items-center mb-6">
-            <CreditCard className="h-6 w-6 text-blue-600 mr-2" />
-            <h2 className="text-xl font-bold text-gray-800">Payment Options</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {paymentPlans.availablePlans.map((plan) => (
-              <div
-                key={plan.duration}
-                className="border border-gray-200 rounded-lg p-6 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer"
-                onClick={() => handlePlanSelection(plan)}
-              >
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">
-                    {plan.duration}
-                  </div>
-                  <div className="text-sm text-gray-600 mb-4">{plan.description}</div>
-                  
-                  <div className="space-y-3">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600">Monthly Payment</p>
-                      <p className="text-lg font-semibold text-gray-800">
-                        {formatCurrency(plan.monthlyPayment)}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600">Total Amount</p>
-                      <p className="text-lg font-semibold text-gray-800">
-                        {formatCurrency(plan.totalAmount)}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600">Interest Amount</p>
-                      <p className="text-sm font-semibold text-gray-800">
-                        {formatCurrency(plan.interestAmount)}
-                      </p>
-                    </div>
-                  </div>
+        <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
+          <h1 className="text-xl font-semibold mb-6 text-gray-800">Payment Plans</h1>
+
+          {/* Customer Summary */}
+          <div className="border-b border-gray-200 pb-4 mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-medium text-gray-700">Customer</span>
+              <span className="font-medium text-gray-700">Loan Details</span>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="text-sm text-gray-600">
+                <span className="font-semibold text-gray-800">Name: {paymentPlans.customerName}</span>
+              </div>
+              <div className="text-sm text-gray-600 text-right">
+                <div className="mb-1">
+                  <span>Principal: </span>
+                  <span className="font-semibold text-gray-800">{formatCurrency(paymentPlans.principalAmount)}</span>
+                </div>
+                <div>
+                  <span>Interest Rate: </span>
+                  <span className="font-semibold text-gray-800">{paymentPlans.interestRate}</span>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-center mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {sortedPlans.map((plan) => {
+            const isFullPayment = plan.duration === 1
+
+            return (
+              <div
+                key={plan.duration}
+                className={`bg-white p-6 rounded-lg shadow-sm border cursor-pointer transition-all duration-200 hover:shadow-md flex flex-col h-full ${
+                  isFullPayment ? "border-green-300 hover:border-green-400" : "border-gray-200 hover:border-blue-400"
+                }`}
+                onClick={() => handlePlanSelection(plan)}
+              >
+                {isFullPayment && (
+                  <div className="mb-4">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      No Interest
+                    </span>
+                  </div>
+                )}
+
+                {/* Header with Icon and Title */}
+                <div className="flex items-center mb-4">
+                  <div
+                    className={`w-8 h-8 rounded flex items-center justify-center mr-3 ${
+                      isFullPayment ? "bg-green-100" : "bg-gray-100"
+                    }`}
+                  >
+                    {isFullPayment ? (
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Clock className="h-4 w-4 text-gray-600" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-800">
+                      {isFullPayment ? "Full Payment" : `${plan.duration} Months`}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Monthly Payment */}
+                <div className="mb-4">
+                  <div className="text-xs text-gray-500 mb-1">
+                    {isFullPayment ? "One-time Payment" : "Monthly Payment"}
+                  </div>
+                  <div className="text-lg font-semibold text-gray-800">{formatCurrency(plan.monthlyPayment)}</div>
+                </div>
+
+                {/* Financial Details */}
+                <div className="space-y-2 mb-6 text-sm flex-grow">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total:</span>
+                    <span className="font-medium text-gray-800">{formatCurrency(plan.totalAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Interest:</span>
+                    <span className={`font-medium ${isFullPayment ? "text-green-600" : "text-gray-800"}`}>
+                      {isFullPayment ? "FREE" : formatCurrency(plan.interestAmount)}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  className={`w-full py-2 px-4 rounded text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent mt-auto ${
+                    isFullPayment
+                      ? "bg-green-600 hover:bg-green-700 text-white"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  {isFullPayment ? "Pay in Full" : "Select Plan"}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="flex justify-start">
           <button
             onClick={onBack}
-            className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition duration-200"
+            className="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 rounded border border-gray-300 text-gray-700 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
           >
-            Back to Form
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Application
           </button>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default PaymentPlans;
+export { PaymentPlans }
+export default PaymentPlans
