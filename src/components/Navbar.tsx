@@ -47,13 +47,15 @@ function Navbar() {
       </div>
 
       {/* Main nav bar */}
-      <div className="bg-transparent">
-        <div className="mx-auto w-full px-32">
-          <div className="flex items-center justify-between">
+      <div className="bg-neutral-900/95 md:bg-transparent">
+        <div className="mx-auto w-full px-4 md:px-8 lg:px-32">
+          <div className="flex items-center justify-between h-[72px] md:h-auto md:py-0">
             {/* Logo */}
             <a href="/" className="flex items-center gap-3">
-              <img src="./ironclad-law-logo.png" alt="" className='w-8 h-8 md:w-32 md:h-32' />
+              <img src="./ironclad-law-logo.png" alt="" className='w-12 h-12 md:w-32 md:h-32' />
             </a>
+
+            {/* Mobile menu button */}
 
             {/* Desktop menu */}
             <nav className="hidden lg:flex items-center gap-8 text-[#C1C1C1]">
@@ -79,7 +81,7 @@ function Navbar() {
             </nav>
             {/* Mobile menu button */}
             <button
-              className="lg:hidden inline-flex flex-col gap-1.5 group"
+              className="lg:hidden inline-flex flex-col justify-center items-center gap-1.5 group p-2 ml-2"
               onClick={() => setIsMenuOpen((v) => !v)}
               aria-label="Toggle menu"
             >
@@ -92,26 +94,36 @@ function Navbar() {
 
         {/* Mobile dropdown */}
         {isMenuOpen && (
-          <div className="lg:hidden border-t border-white/10">
-            <div className="mx-auto max-w-7xl px-4 py-4">
-              <div className="grid gap-3">
+          <div className="lg:hidden border-t border-white/10 bg-neutral-900/95 backdrop-blur-sm fixed inset-x-0 top-[72px] h-[calc(100vh-72px)] overflow-y-auto">
+            <div className="mx-auto max-w-7xl px-4 py-6">
+              <div className="grid gap-4">
                 {navItems.map((item) => (
                   <a
                     key={item.label}
                     href={item.href}
-                    className="py-2 text-xl font-semibold tracking-wide hover:text-amber-400 transition-colors"
+                    className="py-3 text-lg font-semibold tracking-wide hover:text-amber-400 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {item.label}
                   </a>
                 ))}
-                <div className="flex items-center gap-4 pt-2">
-                  <a href="tel:+19548335027" className="flex items-center gap-2 text-sm"><Phone size={16} /><span>(954) 833-5027</span></a>
-                  <a href="mailto:info@ironclad.law" className="flex items-center gap-2 text-sm"><Mail size={16} /><span>info@ironclad.law</span></a>
+                <div className="grid gap-3 pt-4 border-t border-white/10">
+                  <a href="tel:+19548335027" className="flex items-center gap-2 text-sm hover:text-amber-400 transition-colors">
+                    <Phone size={16} />
+                    <span>(954) 833-5027</span>
+                  </a>
+                  <a href="mailto:info@ironclad.law" className="flex items-center gap-2 text-sm hover:text-amber-400 transition-colors">
+                    <Mail size={16} />
+                    <span>info@ironclad.law</span>
+                  </a>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock size={16} />
+                    <span>Mon - Fri 09:00AM-06:00PM</span>
+                  </div>
                 </div>
                 <a
                   href="#consultation"
-                  className="mt-2 inline-block rounded bg-amber-500 px-4 py-2 text-black font-semibold"
+                  className="mt-4 block rounded bg-[#B99671] px-4 py-3 text-white font-semibold text-center hover:bg-[#B99671]/90 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   FREE CONSULTATION

@@ -84,9 +84,60 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {sortedPlans.map((plan) => {
-            const isFullPayment = plan.duration === 1
+        {/* Full Payment Section */}
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">Full Payment Option</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {sortedPlans.filter(plan => plan.duration === 1).map(plan => (
+            <div key={plan.duration} className="bg-white p-6 rounded-lg shadow-sm border cursor-pointer transition-all duration-200 hover:shadow-md border-green-300 hover:border-green-400"
+              onClick={() => handlePlanSelection(plan)}>
+              <div className="mb-4">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  No Interest
+                </span>
+              </div>
+
+              {/* Header with Icon and Title */}
+              <div className="flex items-center mb-4">
+                <div className="w-8 h-8 rounded flex items-center justify-center mr-3 bg-green-100">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-800">Full Payment</h3>
+                </div>
+              </div>
+
+              {/* Payment Amount */}
+              <div className="mb-4">
+                <div className="text-xs text-gray-500 mb-1">One-time Payment</div>
+                <div className="text-lg font-semibold text-gray-800">{formatCurrency(plan.monthlyPayment)}</div>
+              </div>
+
+              {/* Financial Details */}
+              <div className="space-y-2 mb-6 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total:</span>
+                  <span className="font-medium text-gray-800">{formatCurrency(plan.totalAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Interest:</span>
+                  <span className="font-medium text-green-600">FREE</span>
+                </div>
+              </div>
+
+              <button className="w-full py-2 px-4 rounded text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent mt-auto rounded-xl bg-green-600 hover:bg-green-700 text-white">
+                Pay in Full
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Installment Plans Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">Installment Plans</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {sortedPlans.filter(plan => plan.duration !== 1).map((plan) => {
+              const isFullPayment = false;
 
             return (
               <div
@@ -148,7 +199,7 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
                 </div>
 
                 <button
-                  className={`w-full py-2 px-4 rounded text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent mt-auto ${
+                  className={`w-full py-2 px-4 rounded text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent mt-auto rounded-xl ${
                     isFullPayment
                       ? "bg-green-600 hover:bg-green-700 text-white"
                       : "bg-blue-600 hover:bg-blue-700 text-white"
@@ -160,11 +211,12 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
             )
           })}
         </div>
+        </div>
 
         <div className="flex justify-start">
           <button
             onClick={onBack}
-            className="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 rounded border border-gray-300 text-gray-700 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            className="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 rounded border border-gray-300 text-gray-700 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent rounded-xl"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Application
