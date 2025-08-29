@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { usePaymentForm } from '../context/PaymentFormContext';
 import { PaymentPlanService } from '../services/paymentPlanService';
 import { toast } from 'sonner';
+import HeroSection from './HeroSection';
 
 const PaymentForm: React.FC = () => {
   const { state, dispatch } = usePaymentForm();
@@ -99,6 +100,7 @@ const PaymentForm: React.FC = () => {
   };
 
   return (
+    <div><HeroSection backgroundUrl="/bg-img.png" title="Make a Payment" />
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
         <div className="text-center mb-8">
@@ -184,7 +186,7 @@ const PaymentForm: React.FC = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full py-3 px-6 rounded font-medium transition-colors ${
+            className={`w-full py-3 px-6 rounded font-medium transition-colors rounded-xl ${
               isSubmitting
                 ? 'bg-gray-400 text-gray-500 cursor-not-allowed' 
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -208,6 +210,7 @@ const PaymentForm: React.FC = () => {
         )}
       </div>
     </div>
+  </div>
   );
 };
 

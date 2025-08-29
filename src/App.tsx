@@ -5,14 +5,21 @@ import PlanDetails from './pages/PlanDetails';
 import AdminPortal from './pages/AdminPortal';
 import { Toaster } from 'sonner';
 import './App.css';
+import Navbar from './components/Navbar';
+import HeroSection from './components/HeroSection';
 
 function App() {
   return (
     <PaymentFormProvider>
       <Router>
-        <div className="App">
+        <div className="App bg-[#FFFFFF]">
+          <Navbar />
           <Routes>
-            <Route path="/" element={<MultiStepForm />} />
+            <Route path="/" element={
+              <>
+                <MultiStepForm />
+              </>
+            } />
             <Route path="/plan-details/:planId" element={<PlanDetails />} />
             <Route path="/admin" element={<AdminPortal />} />
           </Routes>

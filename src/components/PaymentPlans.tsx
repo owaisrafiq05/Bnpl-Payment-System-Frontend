@@ -4,6 +4,7 @@ import type React from "react"
 import { usePaymentForm } from "../context/PaymentFormContext"
 import type { PaymentPlan } from "../context/PaymentFormContext"
 import { ArrowLeft, CheckCircle, Clock } from "lucide-react"
+import HeroSection from "./HeroSection"
 
 interface PaymentPlansProps {
   paymentPlans: {
@@ -45,6 +46,8 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
   })
 
   return (
+    <div>
+      <HeroSection backgroundUrl="/bg-img.png" title="Payment Plan" />
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="bg-blue-400 text-white p-4 rounded-t-lg mb-8">
@@ -168,6 +171,7 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
           </button>
         </div>
       </div>
+    </div>
     </div>
   )
 }
