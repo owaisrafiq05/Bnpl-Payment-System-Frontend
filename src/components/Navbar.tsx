@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { Phone, Mail, Clock, Search, ShoppingCart } from 'lucide-react';
+import { Clock } from 'lucide-react';
+import { FaPhone } from "react-icons/fa";
+import { RiMailOpenLine } from "react-icons/ri";
+import { FaRegComment } from "react-icons/fa";
 
 const navItems: { label: string; href: string }[] = [
   { label: 'Home', href: 'https://ironclad.law/' },
@@ -17,29 +20,30 @@ function Navbar() {
   return (
     <header className="absolute top-0 z-50 w-full text-white">
       {/* Top contact strip */}
-      <div className="hidden md:block bg-neutral-900/50">
+      <div className="hidden md:block bg-[#2A2A2A]/70">
         <div className="mx-auto w-full px-8">
           <div className="flex items-center justify-between text-base tracking-wide">
-            <div className="flex items-center gap-8 py-2.5 font-bold text-xl ">
+            <div className="flex items-center gap-2 py-2.5 font-sm text-xl text-[#CECECE]">
               <a href="tel:+19548335027" className="flex items-center gap-2 hover:text-amber-400 transition-colors">
-                <Phone size={18} strokeWidth={1.5} />
+                <FaPhone size={14} strokeWidth={1.5} className='text-[#b1976b]'/>
                 <span>(954) 833-5027</span>
               </a>
               <span className="opacity-40 text-lg">·</span>
               <a href="mailto:info@ironclad.law" className="flex items-center gap-2 hover:text-amber-400 transition-colors">
-                <Mail size={18} strokeWidth={1.5} />
+                <RiMailOpenLine size={18} strokeWidth={0.1} className='text-[#b1976b]' />
                 <span>info@ironclad.law</span>
               </a>
               <span className="opacity-40 text-lg">·</span>
               <div className="flex items-center gap-2">
-                <Clock size={18} strokeWidth={1.5} />
+                <Clock size={18} strokeWidth={1.5} className='text-[#b1976b]'/>
                 <span>Mon - Fri 09:00AM-06:00PM</span>
               </div>
             </div>
             <a
               href="http://www.civil.ironclad.law/"
-              className="rounded bg-[#B99671] px-6 py-4 font-semibold text-white hover:bg-[#B99671]/90 transition-colors"
+              className="rounded bg-[#B99671] px-6 py-4 font-semibold text-white hover:bg-[#B99671]/90 transition-colors flex flex-row items-center gap-2 text-sm"
             >
+            <FaRegComment/>
               FREE CONSULTATION
             </a>
           </div>
@@ -48,11 +52,11 @@ function Navbar() {
 
       {/* Main nav bar */}
       <div className="bg-neutral-900/95 md:bg-transparent">
-        <div className="mx-auto w-full px-4 md:px-8 lg:px-32">
+        <div className="mx-auto w-full px-4 md:px-8 lg:px-20">
           <div className="flex items-center justify-between h-[72px] md:h-auto md:py-0">
             {/* Logo */}
             <a href="/" className="flex items-center gap-3">
-              <img src="./ironclad-law-logo.png" alt="" className='w-12 h-12 md:w-32 md:h-32' />
+              <img src="./ironclad-law-logo.png" alt="" className='w-12 h-12 md:w-24 md:h-24' />
             </a>
 
             {/* Mobile menu button */}
@@ -68,16 +72,7 @@ function Navbar() {
                   {item.label}
                 </a>
               ))}
-              {/* Right icons + CTA */}
-            <div className="hidden lg:flex items-center gap-6">
-              <button aria-label="Search" className="hover:text-amber-400 transition-colors">
-                <Search size={20} />
-              </button>
-              <button aria-label="Cart" className="hover:text-amber-400 transition-colors relative">
-                <ShoppingCart size={20} />
-                <span className="absolute -right-2 -top-2 h-5 w-5 rounded-full bg-amber-500 text-black text-xs font-bold grid place-items-center">1</span>
-              </button>
-            </div>
+
             </nav>
             {/* Mobile menu button */}
             <button
@@ -109,11 +104,11 @@ function Navbar() {
                 ))}
                 <div className="grid gap-3 pt-4 border-t border-white/10">
                   <a href="tel:+19548335027" className="flex items-center gap-2 text-sm hover:text-amber-400 transition-colors">
-                    <Phone size={16} />
+                    <FaPhone size={16} />
                     <span>(954) 833-5027</span>
                   </a>
                   <a href="mailto:info@ironclad.law" className="flex items-center gap-2 text-sm hover:text-amber-400 transition-colors">
-                    <Mail size={16} />
+                    <RiMailOpenLine size={16} />
                     <span>info@ironclad.law</span>
                   </a>
                   <div className="flex items-center gap-2 text-sm">
