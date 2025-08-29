@@ -14,8 +14,43 @@ const navItems: { label: string; href: string }[] = [
   { label: 'Reviews', href: 'https://www.lawyers.com/fort-myers/florida/ironclad-law-300050797-f/' },
 ];
 
+const practiceAreas: { label: string; href: string; hasSubmenu?: boolean }[] = [
+  { label: 'Civil Litigation', href: '/#civil-litigation' },
+  { label: 'Strategic Business Planning', href: '/#strategic-planning', hasSubmenu: true },
+  { label: 'General Counsel', href: '/#general-counsel', hasSubmenu: true },
+  { label: 'Corporate Counsel Service', href: '/#corporate-counsel' },
+];
+
+const strategicBusinessPlanning: { label: string; href: string }[] = [
+  { label: 'Mergers & Acquisitions', href: '/#mergers-acquisitions' },
+  { label: 'Transition & Breakaway Services', href: '/#transition-breakaway' },
+  { label: 'Corporate & Business Formation', href: '/#corporate-formation' },
+  { label: 'Succession Planning & Counsel', href: '/#succession-planning' },
+];
+
+const generalCounsel: { label: string; href: string }[] = [
+  { label: 'Contract Review', href: '/#contract-review' },
+  { label: 'Corporate Governance', href: '/#corporate-governance' },
+  { label: 'Family Office Counsel', href: '/#family-office' },
+  { label: 'Employment Law & Labor Services', href: '/#employment-law' },
+  { label: 'Intellectual Property Law Services', href: '/#intellectual-property' },
+  { label: 'Cryptocurrency & Digital Asset Counsel', href: '/#cryptocurrency' },
+];
+
+const currentClients: { label: string; href: string }[] = [
+  { label: 'Speak With Your Attorney', href: '/#speak-attorney' },
+  { label: 'Make a Payment', href: '/#make-payment' },
+  { label: 'Client Portal', href: '/#client-portal' },
+  { label: 'What to Expect', href: '/#what-to-expect' },
+  { label: 'Dispute an Invoice', href: '/#dispute-invoice' },
+];
+
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isPracticeDropdownOpen, setIsPracticeDropdownOpen] = useState(false);
+  const [isStrategicDropdownOpen, setIsStrategicDropdownOpen] = useState(false);
+  const [isGeneralCounselDropdownOpen, setIsGeneralCounselDropdownOpen] = useState(false);
+  const [isCurrentClientsDropdownOpen, setIsCurrentClientsDropdownOpen] = useState(false);
 
   return (
     <header className="absolute top-0 z-50 w-full text-white">
@@ -64,13 +99,184 @@ function Navbar() {
             {/* Desktop menu */}
             <nav className="hidden lg:flex items-center gap-8 text-[#C1C1C1]">
               {navItems.map((item) => (
-                <a
-                  key={item.label}
+                <div key={item.label} className="relative">
+                  {item.label === 'Practice Areas' ? (
+                    <div
+                      className="relative group"
+                      onMouseEnter={() => setIsPracticeDropdownOpen(true)}
+                      onMouseLeave={() => {
+                        setTimeout(() => {
+                          if (!document.querySelector('.group:hover')) {
+                            setIsPracticeDropdownOpen(false);
+                            setIsStrategicDropdownOpen(false);
+                            setIsGeneralCounselDropdownOpen(false);
+                          }
+                        }, 100);
+                      }}
+                    >
+                      <a
+                        href={item.href}
+                        className="text-base font-semibold tracking-wide hover:text-amber-400 transition-colors cursor-pointer"
+                      >
+                        {item.label}
+                      </a>
+                      {isPracticeDropdownOpen && (
+                        <div 
+                          className="absolute top-full left-0 mt-2 w-64 bg-[#1c1c1c] border border-neutral-700 rounded-md shadow-lg z-50 group"
+                          onMouseEnter={() => setIsPracticeDropdownOpen(true)}
+                          onMouseLeave={() => {
+                            setTimeout(() => {
+                              if (!document.querySelector('.group:hover')) {
+                                setIsPracticeDropdownOpen(false);
+                                setIsStrategicDropdownOpen(false);
+                                setIsGeneralCounselDropdownOpen(false);
+                              }
+                            }, 100);
+                          }}
+                        >
+                          <div className="py-2">
+                            {practiceAreas.map((practice) => (
+                              <div key={practice.label} className="relative">
+                                {practice.hasSubmenu ? (
+                                  <div
+                                    className="block px-4 py-3 text-white hover:bg-neutral-700 transition-colors text-sm cursor-pointer"
+                                    onMouseEnter={() => {
+                                      if (practice.label === 'Strategic Business Planning') {
+                                        setIsStrategicDropdownOpen(true);
+                                      } else if (practice.label === 'General Counsel') {
+                                        setIsGeneralCounselDropdownOpen(true);
+                                      }
+                                    }}
+                                    onMouseLeave={() => {
+                                      if (practice.label === 'Strategic Business Planning') {
+                                        setIsStrategicDropdownOpen(false);
+                                      } else if (practice.label === 'General Counsel') {
+                                        setIsGeneralCounselDropdownOpen(false);
+                                      }
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span>{practice.label}</span>
+                                      <span className="text-xs">›</span>
+                                    </div>
+                                                                         {practice.label === 'Strategic Business Planning' && isStrategicDropdownOpen && (
+                                       <div 
+                                         className="absolute left-full top-0 ml-1 w-64 bg-[#1c1c1c] border border-neutral-700 rounded-md shadow-lg strategic-submenu"
+                                         onMouseEnter={() => setIsStrategicDropdownOpen(true)}
+                                         onMouseLeave={() => {
+                                           setTimeout(() => {
+                                             if (!document.querySelector('.strategic-submenu:hover')) {
+                                               setIsStrategicDropdownOpen(false);
+                                             }
+                                           }, 100);
+                                         }}
+                                       >
+                                        <div className="py-2">
+                                          {strategicBusinessPlanning.map((subItem) => (
+                                            <a
+                                              key={subItem.label}
+                                              href={subItem.href}
+                                              className="block px-4 py-3 text-white hover:bg-neutral-700 transition-colors text-sm"
+                                            >
+                                              {subItem.label}
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                                                         {practice.label === 'General Counsel' && isGeneralCounselDropdownOpen && (
+                                       <div 
+                                         className="absolute left-full top-0 ml-1 w-64 bg-[#1c1c1c] border border-neutral-700 rounded-md shadow-lg submenu"
+                                         onMouseEnter={() => setIsGeneralCounselDropdownOpen(true)}
+                                         onMouseLeave={() => {
+                                           setTimeout(() => {
+                                             if (!document.querySelector('.submenu:hover')) {
+                                               setIsGeneralCounselDropdownOpen(false);
+                                             }
+                                           }, 100);
+                                         }}
+                                       >
+                                        <div className="py-2">
+                                          {generalCounsel.map((subItem) => (
+                                            <a
+                                              key={subItem.label}
+                                              href={subItem.href}
+                                              className="block px-4 py-3 text-white hover:bg-neutral-700 transition-colors text-sm"
+                                            >
+                                              {subItem.label}
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <a
+                                    href={practice.href}
+                                    className="block px-4 py-3 text-white hover:bg-neutral-700 transition-colors text-sm"
+                                  >
+                                    {practice.label}
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : item.label === 'Current Clients' ? (
+                    <div
+                      className="relative group"
+                      onMouseEnter={() => setIsCurrentClientsDropdownOpen(true)}
+                      onMouseLeave={() => {
+                        setTimeout(() => {
+                          if (!document.querySelector('.group:hover')) {
+                            setIsCurrentClientsDropdownOpen(false);
+                          }
+                        }, 100);
+                      }}
+                    >
+                      <a
+                        href={item.href}
+                        className="text-base font-semibold tracking-wide hover:text-amber-400 transition-colors cursor-pointer"
+                      >
+                        {item.label}
+                      </a>
+                      {isCurrentClientsDropdownOpen && (
+                        <div 
+                          className="absolute top-full left-0 mt-2 w-64 bg-[#1c1c1c] border border-neutral-700 rounded-md shadow-lg z-50 group"
+                          onMouseEnter={() => setIsCurrentClientsDropdownOpen(true)}
+                          onMouseLeave={() => {
+                            setTimeout(() => {
+                              if (!document.querySelector('.group:hover')) {
+                                setIsCurrentClientsDropdownOpen(false);
+                              }
+                            }, 100);
+                          }}
+                        >
+                          <div className="py-2">
+                            {currentClients.map((clientItem) => (
+                              <a
+                                key={clientItem.label}
+                                href={clientItem.href}
+                                className="block px-4 py-3 text-white hover:bg-neutral-700 transition-colors text-sm"
+                              >
+                                {clientItem.label}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <a
                   href={item.href}
                   className="text-base font-semibold tracking-wide hover:text-amber-400 transition-colors"
                 >
                   {item.label}
                 </a>
+                  )}
+                </div>
               ))}
 
             </nav>

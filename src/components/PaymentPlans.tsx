@@ -51,10 +51,10 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Full Payment Section */}
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Full Payment Option</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <h2 className="text-xl text-center font-semibold mb-4 text-gray-800">Full Payment Option</h2>
+        <div className="flex justify-center mb-8">
           {sortedPlans.filter(plan => plan.duration === 1).map(plan => (
-            <div key={plan.duration} className="bg-white p-6 rounded-lg shadow-sm border cursor-pointer transition-all duration-200 hover:shadow-md border-green-300 hover:border-green-400"
+            <div key={plan.duration} className="bg-white p-6 rounded-lg shadow-sm border cursor-pointer transition-all duration-200 hover:shadow-md border-green-300 hover:border-green-400 w-80"
               onClick={() => handlePlanSelection(plan)}>
               <div className="mb-4">
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -100,7 +100,7 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
 
         {/* Installment Plans Section */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800">Installment Plans</h2>
+          <h2 className="text-xl text-center font-semibold mb-4 text-gray-800">Installment Plans</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {sortedPlans.filter(plan => plan.duration !== 1).map((plan) => {
               const isFullPayment = false;
