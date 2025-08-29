@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { PaymentPlanService, type PlanDetailsResponse, type PaymentScheduleResponse } from '../services/paymentPlanService';
 import { toast } from 'sonner';
+import HeroSection from '../components/HeroSection';
 
 const PlanDetails: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
@@ -86,6 +87,8 @@ const PlanDetails: React.FC = () => {
     : 0;
 
   return (
+    <div>
+      <HeroSection backgroundUrl="/bg-img.png" title="Payment Plan Details" />
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
@@ -271,6 +274,7 @@ const PlanDetails: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       </div>
     </div>

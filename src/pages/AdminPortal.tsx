@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PaymentPlanService, type PaymentPlanData } from '../services/paymentPlanService';
+import HeroSection from '../components/HeroSection';
 
 interface UserData {
   id: string;
@@ -241,6 +242,8 @@ const AdminPortal: React.FC = () => {
   }
 
   return (
+    <div>
+      <HeroSection backgroundUrl="/bg-img.png" title="Admin Portal" />
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -406,6 +409,7 @@ const AdminPortal: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
