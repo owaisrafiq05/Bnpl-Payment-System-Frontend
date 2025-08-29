@@ -358,7 +358,7 @@ const CheckoutForm: React.FC = () => {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Coupon Section */}
-        <div className="bg-blue-400 text-white p-4 rounded-t-lg mb-8">
+        <div className="bg-[#46A5CA] text-white p-4 mb-8">
           <div className="flex items-center gap-2">
             <span className="text-sm">📋</span>
             <span className="text-sm font-medium">Have a coupon?</span>

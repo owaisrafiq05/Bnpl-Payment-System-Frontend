@@ -50,7 +50,7 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
       <HeroSection backgroundUrl="/bg-img.png" title="Payment Plan" />
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="bg-blue-400 text-white p-4 rounded-t-lg mb-8">
+        <div className="bg-[#46A5CA] text-white p-4 mb-8">
           <div className="flex items-center gap-2">
             <span className="text-sm">💳</span>
             <span className="text-sm font-medium">Choose the perfect payment plan for your needs</span>
