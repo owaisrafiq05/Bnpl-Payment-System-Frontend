@@ -50,40 +50,6 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
       <HeroSection backgroundUrl="/bg-img.png" title="Payment Plan" />
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="bg-[#46A5CA] text-white p-4 mb-8">
-          <div className="flex items-center gap-2">
-            <span className="text-sm">💳</span>
-            <span className="text-sm font-medium">Choose the perfect payment plan for your needs</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-          <h1 className="text-xl font-semibold mb-6 text-gray-800">Payment Plans</h1>
-
-          {/* Customer Summary */}
-          <div className="border-b border-gray-200 pb-4 mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium text-gray-700">Customer</span>
-              <span className="font-medium text-gray-700">Loan Details</span>
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="text-sm text-gray-600">
-                <span className="font-semibold text-gray-800">Name: {paymentPlans.customerName}</span>
-              </div>
-              <div className="text-sm text-gray-600 text-right">
-                <div className="mb-1">
-                  <span>Principal: </span>
-                  <span className="font-semibold text-gray-800">{formatCurrency(paymentPlans.principalAmount)}</span>
-                </div>
-                <div>
-                  <span>Interest Rate: </span>
-                  <span className="font-semibold text-gray-800">{paymentPlans.interestRate}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Full Payment Section */}
         <h2 className="text-xl font-semibold mb-4 text-gray-800">Full Payment Option</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
