@@ -3,6 +3,7 @@ import { usePaymentForm } from '../context/PaymentFormContext';
 import { PaymentPlanService } from '../services/paymentPlanService';
 import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
+import HeroSection from './HeroSection';
 
 const CheckoutForm: React.FC = () => {
   const { state, dispatch } = usePaymentForm();
@@ -352,6 +353,8 @@ const CheckoutForm: React.FC = () => {
   }
 
   return (
+    <div>
+      <HeroSection backgroundUrl="/bg-img.png" title="Checkout" />
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Coupon Section */}
@@ -920,6 +923,7 @@ const CheckoutForm: React.FC = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

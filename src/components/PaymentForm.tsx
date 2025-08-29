@@ -101,7 +101,7 @@ const PaymentForm: React.FC = () => {
 
   return (
     <div><HeroSection backgroundUrl="/bg-img.png" title="Make a Payment" />
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 flex-col">
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
@@ -208,6 +208,20 @@ const PaymentForm: React.FC = () => {
             {state.error}
           </div>
         )}
+      </div>
+
+      {/* Back to Application Button */}
+      <div className="mt-6 flex justify-start">
+        <a
+          href="https://ironclad.law/"
+          className="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 rounded border border-gray-300 text-gray-700 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent rounded-xl"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Back to Application
+        </a>
       </div>
     </div>
   </div>
