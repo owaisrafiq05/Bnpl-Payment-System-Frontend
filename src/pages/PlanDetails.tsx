@@ -126,6 +126,22 @@ const PlanDetails: React.FC = () => {
                   {planDetails?.paymentPlan?.principalAmount ? formatCurrency(planDetails.paymentPlan.principalAmount) : '-'}
                 </span>
               </div>
+              {planDetails?.paymentPlan?.upfrontPayment && planDetails.paymentPlan.upfrontPayment > 0 && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Upfront Payment</span>
+                    <span className="font-medium text-blue-600">
+                      {formatCurrency(planDetails.paymentPlan.upfrontPayment)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Remaining Amount</span>
+                    <span className="font-medium">
+                      {formatCurrency(planDetails.paymentPlan.remainingAmount)}
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-600">Monthly Payment</span>
                 <span className="font-medium">
@@ -216,6 +232,7 @@ const PlanDetails: React.FC = () => {
               <thead>
                 <tr className="bg-gray-50">
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment #</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -228,6 +245,17 @@ const PlanDetails: React.FC = () => {
                   <tr key={payment.sequenceNumber} className={payment.status === 'completed' ? 'bg-green-50' : ''}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {payment.sequenceNumber}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {payment.isUpfrontPayment ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Upfront
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          Monthly
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {payment.scheduledDate ? formatDate(payment.scheduledDate) : '-'}
@@ -266,7 +294,7 @@ const PlanDetails: React.FC = () => {
                 ))}
                 {(!schedule?.schedule || schedule.schedule.length === 0) && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
                       No payment schedule available
                     </td>
                   </tr>

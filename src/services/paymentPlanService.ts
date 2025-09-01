@@ -5,6 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/
 export interface CalculatePaymentPlansRequest {
   principalAmount: number;
   customerName: string;
+  upfrontPayment?: number;
 }
 
 export interface CreatePaymentPlanRequest {
@@ -13,6 +14,8 @@ export interface CreatePaymentPlanRequest {
     totalAmount: number;
     monthlyPayment: number;
     interestAmount: number;
+    upfrontPayment: number;
+    remainingAmount: number;
   };
   customerName: string;
   email: string;
@@ -41,6 +44,8 @@ export interface CreatePaymentPlanResponse {
       duration: number;
       interestRate: string;
       interestAmount: number;
+      upfrontPayment: number;
+      remainingAmount: number;
       firstPaymentDate: string;
       lastPaymentDate: string;
     };
@@ -233,6 +238,8 @@ export interface PlanDetailsResponse {
     status: 'active' | 'completed' | 'defaulted';
     startDate: string;
     endDate: string;
+    upfrontPayment: number;
+    remainingAmount: number;
   };
   paymentSchedule: Array<{
     id: string;
@@ -242,6 +249,7 @@ export interface PlanDetailsResponse {
     status: 'completed' | 'pending' | 'failed';
     processedDate?: string;
     failureReason?: string;
+    isUpfrontPayment: boolean;
   }>;
 }
 
@@ -261,6 +269,7 @@ export interface PaymentScheduleResponse {
     processedDate?: string;
     retryCount: number;
     greenMoneyCheckId: string | null;
+    isUpfrontPayment: boolean;
   }>;
 }
 

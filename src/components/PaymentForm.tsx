@@ -9,6 +9,7 @@ const PaymentForm: React.FC = () => {
   const [amount, setAmount] = useState('');
   const [clientName, setClientName] = useState('');
   const [note, setNote] = useState('');
+  const [upfrontPayment, setUpfrontPayment] = useState('');
   const [showNote, setShowNote] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,6 +19,7 @@ const PaymentForm: React.FC = () => {
     setAmount(state.formData.amount);
     setClientName(state.formData.clientName);
     setNote(state.formData.note);
+    setUpfrontPayment(state.formData.upfrontPayment);
   }, [state.formData]);
 
   const validateForm = (): boolean => {
@@ -31,6 +33,13 @@ const PaymentForm: React.FC = () => {
     
     if (!clientName.trim()) {
       newErrors.clientName = 'Client name is required';
+    }
+
+    // Validate upfront payment
+    if (upfrontPayment.trim() && (isNaN(parseFloat(upfrontPayment)) || parseFloat(upfrontPayment) < 0)) {
+      newErrors.upfrontPayment = 'Please enter a valid upfront payment amount';
+    } else if (upfrontPayment.trim() && parseFloat(upfrontPayment) >= parseFloat(amount)) {
+      newErrors.upfrontPayment = 'Upfront payment must be less than the total amount';
     }
 
     setErrors(newErrors);
@@ -50,13 +59,14 @@ const PaymentForm: React.FC = () => {
       // Update global state
       dispatch({
         type: 'UPDATE_FORM_DATA',
-        payload: { amount, clientName, note }
+        payload: { amount, clientName, note, upfrontPayment }
       });
 
       // Call API to calculate payment plans
       const response = await PaymentPlanService.calculatePaymentPlans({
         principalAmount: parseFloat(amount),
-        customerName: clientName
+        customerName: clientName,
+        upfrontPayment: upfrontPayment.trim() ? parseFloat(upfrontPayment) : 0
       });
 
       // Save payment plans to global state
@@ -90,6 +100,9 @@ const PaymentForm: React.FC = () => {
         break;
       case 'note':
         setNote(value);
+        break;
+      case 'upfrontPayment':
+        setUpfrontPayment(value);
         break;
     }
 
@@ -154,6 +167,33 @@ const PaymentForm: React.FC = () => {
             {errors.clientName && (
               <p className="text-red-500 text-xs mt-1">{errors.clientName}</p>
             )}
+          </div>
+
+          {/* Upfront Payment Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Upfront Payment (Optional)
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                $
+              </span>
+              <input
+                type="text"
+                value={upfrontPayment}
+                onChange={(e) => handleInputChange('upfrontPayment', e.target.value)}
+                className={`w-full pl-8 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent ${
+                  errors.upfrontPayment ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="0.00"
+              />
+            </div>
+            {errors.upfrontPayment && (
+              <p className="text-red-500 text-xs mt-1">{errors.upfrontPayment}</p>
+            )}
+            <p className="text-gray-500 text-xs mt-1">
+              Pay a portion upfront to reduce your monthly payments
+            </p>
           </div>
 
           {/* Note Field */}

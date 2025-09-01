@@ -11,6 +11,8 @@ interface PaymentPlansProps {
     customerName: string
     principalAmount: number
     interestRate: string
+    upfrontPayment: number
+    remainingAmount: number
     availablePlans: PaymentPlan[]
   }
   onSelectPlan: (plan: PaymentPlan) => void
@@ -50,6 +52,27 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
       <HeroSection backgroundUrl="/bg-img.png" title="Payment Plan" />
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
+        {/* Payment Summary */}
+        {paymentPlans.upfrontPayment > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">Payment Summary</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">Total Amount:</span>
+                <span className="font-medium text-gray-800 ml-2">{formatCurrency(paymentPlans.principalAmount)}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Upfront Payment:</span>
+                <span className="font-medium text-blue-600 ml-2">{formatCurrency(paymentPlans.upfrontPayment)}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Remaining Amount:</span>
+                <span className="font-medium text-gray-800 ml-2">{formatCurrency(paymentPlans.remainingAmount)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Full Payment Section */}
         <h2 className="text-xl text-center font-semibold mb-4 text-gray-800">Full Payment Option</h2>
         <div className="flex justify-center mb-8">
@@ -85,6 +108,18 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
                   <span className="text-gray-600">Total:</span>
                   <span className="font-medium text-gray-800">{formatCurrency(plan.totalAmount)}</span>
                 </div>
+                {plan.upfrontPayment > 0 && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Upfront:</span>
+                      <span className="font-medium text-blue-600">{formatCurrency(plan.upfrontPayment)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Remaining:</span>
+                      <span className="font-medium text-gray-800">{formatCurrency(plan.remainingAmount)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Interest:</span>
                   <span className="font-medium text-green-600">FREE</span>
@@ -156,6 +191,18 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
                     <span className="text-gray-600">Total:</span>
                     <span className="font-medium text-gray-800">{formatCurrency(plan.totalAmount)}</span>
                   </div>
+                  {plan.upfrontPayment > 0 && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Upfront:</span>
+                        <span className="font-medium text-blue-600">{formatCurrency(plan.upfrontPayment)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Remaining:</span>
+                        <span className="font-medium text-gray-800">{formatCurrency(plan.remainingAmount)}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-600">Interest:</span>
                     <span className={`font-medium ${isFullPayment ? "text-green-600" : "text-gray-800"}`}>

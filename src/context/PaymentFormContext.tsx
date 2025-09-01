@@ -6,6 +6,7 @@ export interface PaymentFormData {
   amount: string;
   clientName: string;
   note: string;
+  upfrontPayment: string;
 }
 
 export interface PaymentPlan {
@@ -14,12 +15,16 @@ export interface PaymentPlan {
   monthlyPayment: number;
   interestAmount: number;
   description: string;
+  upfrontPayment: number;
+  remainingAmount: number;
 }
 
 export interface PaymentPlansResponse {
   customerName: string;
   principalAmount: number;
   interestRate: string;
+  upfrontPayment: number;
+  remainingAmount: number;
   availablePlans: PaymentPlan[];
 }
 
@@ -66,6 +71,7 @@ const initialState: PaymentFormState = {
     amount: '',
     clientName: '',
     note: '',
+    upfrontPayment: '',
   },
   paymentPlans: null,
   selectedPlan: null,

@@ -262,7 +262,9 @@ const CheckoutForm: React.FC = () => {
           duration: state.selectedPlan.duration,
           totalAmount: state.selectedPlan.totalAmount,
           monthlyPayment: state.selectedPlan.monthlyPayment,
-          interestAmount: state.selectedPlan.interestAmount
+          interestAmount: state.selectedPlan.interestAmount,
+          upfrontPayment: state.selectedPlan.upfrontPayment,
+          remainingAmount: state.selectedPlan.remainingAmount
         }));
       }
       
