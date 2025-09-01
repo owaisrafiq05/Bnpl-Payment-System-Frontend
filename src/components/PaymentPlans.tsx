@@ -62,7 +62,7 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
                 <span className="font-medium text-gray-800 ml-2">{formatCurrency(paymentPlans.principalAmount)}</span>
               </div>
               <div>
-                <span className="text-gray-600">Upfront Payment:</span>
+                <span className="text-gray-600">Down Payment:</span>
                 <span className="font-medium text-blue-600 ml-2">{formatCurrency(paymentPlans.upfrontPayment)}</span>
               </div>
               <div>
@@ -99,27 +99,11 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
               {/* Payment Amount */}
               <div className="mb-4">
                 <div className="text-xs text-gray-500 mb-1">One-time Payment</div>
-                <div className="text-lg font-semibold text-gray-800">{formatCurrency(plan.monthlyPayment)}</div>
+                <div className="text-lg font-semibold text-gray-800">{formatCurrency(plan.totalAmount)}</div>
               </div>
 
               {/* Financial Details */}
               <div className="space-y-2 mb-6 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total:</span>
-                  <span className="font-medium text-gray-800">{formatCurrency(plan.totalAmount)}</span>
-                </div>
-                {plan.upfrontPayment > 0 && (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Upfront:</span>
-                      <span className="font-medium text-blue-600">{formatCurrency(plan.upfrontPayment)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Remaining:</span>
-                      <span className="font-medium text-gray-800">{formatCurrency(plan.remainingAmount)}</span>
-                    </div>
-                  </>
-                )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Interest:</span>
                   <span className="font-medium text-green-600">FREE</span>

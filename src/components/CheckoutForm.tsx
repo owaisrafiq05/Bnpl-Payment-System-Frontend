@@ -308,14 +308,42 @@ const CheckoutForm: React.FC = () => {
 
       setUploadProgress('Submitting payment plan...');
       
+      let result;
       if (isFullPayment) {
         // Use full payment API for immediate payment processing
-        await PaymentPlanService.processFullPayment(formData);
+        result = await PaymentPlanService.processFullPayment(formData);
         toast.success('Full payment processed successfully!');
       } else {
         // Use regular installment payment API
-        await PaymentPlanService.createPaymentPlanWithFiles(formData);
+        result = await PaymentPlanService.createPaymentPlanWithFiles(formData);
         toast.success('Payment plan created successfully!');
+      }
+      
+      // Log successful response details
+      console.log('Payment plan created successfully:', {
+        paymentPlanId: result.paymentPlanId,
+        customerId: result.customerId,
+        planDetails: result.planDetails,
+        firstPayment: result.firstPayment,
+        message: result.message
+      });
+
+      // Show GreenPay response details for successful payments
+      if (result.firstPayment?.greenPayResponse) {
+        const greenPayResponse = result.firstPayment.greenPayResponse;
+        console.log('GreenPay Response Details:', {
+          result: greenPayResponse.result,
+          resultDescription: greenPayResponse.resultDescription,
+          verifyResult: greenPayResponse.verifyResult,
+          verifyResultDescription: greenPayResponse.verifyResultDescription,
+          checkNumber: greenPayResponse.checkNumber,
+          checkId: greenPayResponse.checkId
+        });
+        
+        // Show additional success details if available
+        if (greenPayResponse.checkNumber && greenPayResponse.checkId) {
+          toast.success(`Payment processed! Check #${greenPayResponse.checkNumber}`, { duration: 5000 });
+        }
       }
       
       // Redirect to the admin portal
@@ -324,7 +352,37 @@ const CheckoutForm: React.FC = () => {
       
     } catch (error) {
       console.error('Error creating payment plan:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create payment plan');
+      
+      // Handle different types of errors
+      let errorMessage = 'Failed to create payment plan';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Check if the error message contains detailed information (from the new API format)
+        if (error.message.includes('Reason:') || error.message.includes('Suggestions:')) {
+          // The error message contains detailed information from the service
+          // Split the message to show main error and details separately
+          const lines = error.message.split('\n');
+          const mainError = lines[0];
+          const details = lines.slice(1).filter(line => line.trim());
+          
+          // Show main error first
+          toast.error(mainError);
+          
+          // Show details in a more readable format
+          if (details.length > 0) {
+            const detailsText = details.join('\n');
+            // Use a longer duration for detailed error messages
+            toast.error(detailsText, { duration: 8000 });
+          }
+        } else {
+          // Regular error message
+          toast.error(errorMessage);
+        }
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
       setUploadProgress('');

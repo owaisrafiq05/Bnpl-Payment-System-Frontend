@@ -32,8 +32,9 @@ export interface CreatePaymentPlanRequest {
   bankName: string;
 }
 
-export interface CreatePaymentPlanResponse {
-  success: boolean;
+// Updated response interfaces to match new backend structure
+export interface CreatePaymentPlanSuccessResponse {
+  success: true;
   data: {
     paymentPlanId: string;
     customerId: string;
@@ -49,9 +50,40 @@ export interface CreatePaymentPlanResponse {
       firstPaymentDate: string;
       lastPaymentDate: string;
     };
+    firstPayment: {
+      success: true;
+      greenPayResponse: {
+        result: string;
+        resultDescription: string;
+        verifyResult: string;
+        verifyResultDescription: string;
+        checkNumber: string;
+        checkId: string;
+      };
+    };
     message: string;
   };
 }
+
+export interface CreatePaymentPlanErrorResponse {
+  success: false;
+  error: string;
+  details: {
+    reason: string;
+    message: string;
+    suggestions: string[];
+    greenPayResponse: {
+      result: string;
+      resultDescription: string;
+      verifyResult: string;
+      verifyResultDescription: string;
+      checkNumber: string;
+      checkId: string;
+    };
+  };
+}
+
+export type CreatePaymentPlanResponse = CreatePaymentPlanSuccessResponse | CreatePaymentPlanErrorResponse;
 
 export class PaymentPlanService {
   private static async makeRequest<T>(
@@ -78,7 +110,7 @@ export class PaymentPlanService {
       return await response.json();
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`API request failed: ${error.message}`);
+        throw new Error(`${error.message}`);
       }
       throw new Error('API request failed: Unknown error');
     }
@@ -104,7 +136,7 @@ export class PaymentPlanService {
 
   static async createPaymentPlan(
     request: CreatePaymentPlanRequest
-  ): Promise<CreatePaymentPlanResponse['data']> {
+  ): Promise<CreatePaymentPlanSuccessResponse['data']> {
     const response = await this.makeRequest<CreatePaymentPlanResponse>(
       '/payment-plans?testMode=true',
       {
@@ -114,15 +146,44 @@ export class PaymentPlanService {
     );
 
     if (!response.success) {
-      throw new Error('Failed to create payment plan');
+      // Handle the new error response format
+      const errorResponse = response as CreatePaymentPlanErrorResponse;
+      const errorMessage = errorResponse.details?.message || errorResponse.error || 'Failed to create payment plan';
+      const suggestions = errorResponse.details?.suggestions || [];
+      const greenPayResponse = errorResponse.details?.greenPayResponse;
+      
+      // Log complete GreenPay error response for debugging
+      if (greenPayResponse) {
+        console.error('GreenPay Error Response:', {
+          result: greenPayResponse.result,
+          resultDescription: greenPayResponse.resultDescription,
+          verifyResult: greenPayResponse.verifyResult,
+          verifyResultDescription: greenPayResponse.verifyResultDescription,
+          checkNumber: greenPayResponse.checkNumber,
+          checkId: greenPayResponse.checkId
+        });
+      }
+      
+      let fullErrorMessage = errorMessage;
+      
+      // Add the specific GreenPay error reason
+      if (greenPayResponse?.resultDescription) {
+        fullErrorMessage += `\n\nGreenPay Error: ${greenPayResponse.resultDescription}`;
+      }
+      
+      if (suggestions.length > 0) {
+        fullErrorMessage += `\n\nSuggestions:\n${suggestions.map(s => `• ${s}`).join('\n')}`;
+      }
+      
+      throw new Error(fullErrorMessage);
     }
 
-    return response.data;
+    return (response as CreatePaymentPlanSuccessResponse).data;
   }
 
   static async createPaymentPlanWithFiles(
     formData: FormData
-  ): Promise<CreatePaymentPlanResponse['data']> {
+  ): Promise<CreatePaymentPlanSuccessResponse['data']> {
     const url = `${API_BASE_URL}/payment-plans?testMode=true`;
     
     try {
@@ -139,13 +200,42 @@ export class PaymentPlanService {
       const result = await response.json() as CreatePaymentPlanResponse;
       
       if (!result.success) {
-        throw new Error('Failed to create payment plan');
+        // Handle the new error response format
+        const errorResponse = result as CreatePaymentPlanErrorResponse;
+        const errorMessage = errorResponse.details?.message || errorResponse.error || 'Failed to create payment plan';
+        const suggestions = errorResponse.details?.suggestions || [];
+        const greenPayResponse = errorResponse.details?.greenPayResponse;
+        
+        // Log complete GreenPay error response for debugging
+        if (greenPayResponse) {
+          console.error('GreenPay Error Response:', {
+            result: greenPayResponse.result,
+            resultDescription: greenPayResponse.resultDescription,
+            verifyResult: greenPayResponse.verifyResult,
+            verifyResultDescription: greenPayResponse.verifyResultDescription,
+            checkNumber: greenPayResponse.checkNumber,
+            checkId: greenPayResponse.checkId
+          });
+        }
+        
+        let fullErrorMessage = errorMessage;
+        
+        // Add the specific GreenPay error reason
+        if (greenPayResponse?.resultDescription) {
+          fullErrorMessage += `\n\nGreenPay Error: ${greenPayResponse.resultDescription}`;
+        }
+        
+        if (suggestions.length > 0) {
+          fullErrorMessage += `\n\nSuggestions:\n${suggestions.map(s => `• ${s}`).join('\n')}`;
+        }
+        
+        throw new Error(fullErrorMessage);
       }
 
       return result.data;
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`API request failed: ${error.message}`);
+        throw new Error(`${error.message}`);
       }
       throw new Error('API request failed: Unknown error');
     }
@@ -153,7 +243,7 @@ export class PaymentPlanService {
 
   static async processFullPayment(
     formData: FormData
-  ): Promise<CreatePaymentPlanResponse['data']> {
+  ): Promise<CreatePaymentPlanSuccessResponse['data']> {
     const url = `${API_BASE_URL}/payment-plans/full-payment?testMode=true`;
     
     try {
@@ -170,13 +260,42 @@ export class PaymentPlanService {
       const result = await response.json() as CreatePaymentPlanResponse;
       
       if (!result.success) {
-        throw new Error('Failed to process full payment');
+        // Handle the new error response format
+        const errorResponse = result as CreatePaymentPlanErrorResponse;
+        const errorMessage = errorResponse.details?.message || errorResponse.error || 'Failed to process full payment';
+        const suggestions = errorResponse.details?.suggestions || [];
+        const greenPayResponse = errorResponse.details?.greenPayResponse;
+        
+        // Log complete GreenPay error response for debugging
+        if (greenPayResponse) {
+          console.error('GreenPay Error Response:', {
+            result: greenPayResponse.result,
+            resultDescription: greenPayResponse.resultDescription,
+            verifyResult: greenPayResponse.verifyResult,
+            verifyResultDescription: greenPayResponse.verifyResultDescription,
+            checkNumber: greenPayResponse.checkNumber,
+            checkId: greenPayResponse.checkId
+          });
+        }
+        
+        let fullErrorMessage = errorMessage;
+        
+        // Add the specific GreenPay error reason
+        if (greenPayResponse?.resultDescription) {
+          fullErrorMessage += `\n\nGreenPay Error: ${greenPayResponse.resultDescription}`;
+        }
+        
+        if (suggestions.length > 0) {
+          fullErrorMessage += `\n\nSuggestions:\n${suggestions.map(s => `• ${s}`).join('\n')}`;
+        }
+        
+        throw new Error(fullErrorMessage);
       }
 
-      return result.data;
+      return (result as CreatePaymentPlanSuccessResponse).data;
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`API request failed: ${error.message}`);
+        throw new Error(`${error.message}`);
       }
       throw new Error('API request failed: Unknown error');
     }
@@ -270,6 +389,7 @@ export interface PaymentScheduleResponse {
     retryCount: number;
     greenMoneyCheckId: string | null;
     isUpfrontPayment: boolean;
+    failureReason?: string;
   }>;
 }
 

@@ -129,7 +129,7 @@ const PlanDetails: React.FC = () => {
               {planDetails?.paymentPlan?.upfrontPayment && planDetails.paymentPlan.upfrontPayment > 0 && (
                 <>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Upfront Payment</span>
+                    <span className="text-gray-600">Down Payment</span>
                     <span className="font-medium text-blue-600">
                       {formatCurrency(planDetails.paymentPlan.upfrontPayment)}
                     </span>
@@ -280,7 +280,7 @@ const PlanDetails: React.FC = () => {
                       </div>
                       {payment.status === 'failed' && (
                         <p className="mt-1 text-xs text-red-600 max-w-xs">
-                          {payment.status === 'failed' ? 'Payment failed' : 'Payment failed'}
+                          {payment.failureReason || 'Payment failed'}
                         </p>
                       )}
                     </td>

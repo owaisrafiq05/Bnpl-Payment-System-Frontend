@@ -37,9 +37,9 @@ const PaymentForm: React.FC = () => {
 
     // Validate upfront payment
     if (upfrontPayment.trim() && (isNaN(parseFloat(upfrontPayment)) || parseFloat(upfrontPayment) < 0)) {
-      newErrors.upfrontPayment = 'Please enter a valid upfront payment amount';
+      newErrors.upfrontPayment = 'Please enter a valid down payment amount';
     } else if (upfrontPayment.trim() && parseFloat(upfrontPayment) >= parseFloat(amount)) {
-      newErrors.upfrontPayment = 'Upfront payment must be less than the total amount';
+      newErrors.upfrontPayment = 'Down payment must be less than the total amount';
     }
 
     setErrors(newErrors);
@@ -172,7 +172,7 @@ const PaymentForm: React.FC = () => {
           {/* Upfront Payment Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upfront Payment (Optional)
+              Down Payment (Optional)
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
