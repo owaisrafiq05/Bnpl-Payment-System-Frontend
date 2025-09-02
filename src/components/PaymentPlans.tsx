@@ -37,13 +37,13 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
     try {
       setIsLoading(true)
       
-    // Save selected plan to global state
-    dispatch({ type: "SET_SELECTED_PLAN", payload: plan })
+      // Save selected plan to global state
+      dispatch({ type: "SET_SELECTED_PLAN", payload: plan })
 
       // Check if this is a pay-in-full plan (duration = 1)
       if (plan.duration === 1) {
         // For pay-in-full plans, redirect to checkout page
-    dispatch({ type: "SET_CURRENT_STEP", payload: 3 })
+        dispatch({ type: "SET_CURRENT_STEP", payload: 3 })
         onSelectPlan(plan)
         return
       }
