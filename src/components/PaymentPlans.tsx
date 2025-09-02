@@ -37,13 +37,13 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
     try {
       setIsLoading(true)
       
-      // Save selected plan to global state
-      dispatch({ type: "SET_SELECTED_PLAN", payload: plan })
+    // Save selected plan to global state
+    dispatch({ type: "SET_SELECTED_PLAN", payload: plan })
 
       // Check if this is a pay-in-full plan (duration = 1)
       if (plan.duration === 1) {
         // For pay-in-full plans, redirect to checkout page
-        dispatch({ type: "SET_CURRENT_STEP", payload: 3 })
+    dispatch({ type: "SET_CURRENT_STEP", payload: 3 })
         onSelectPlan(plan)
         return
       }
@@ -187,7 +187,10 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
 
         {/* Installment Plans Section */}
         <div className="mb-8">
-          <h2 className="text-xl text-center font-semibold mb-4 text-gray-800">Installment Plans</h2>
+          <h2 className="text-xl text-center font-semibold mb-2 text-gray-800">Installment Plans</h2>
+          <p className="text-center text-sm text-red-600 font-medium mb-4">
+            * Subject to final calculations - Estimated costs only
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {sortedPlans.filter(plan => plan.duration !== 1).map((plan) => {
               const isFullPayment = false;
