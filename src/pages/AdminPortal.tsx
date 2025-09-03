@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PaymentPlanService, type PaymentPlanData } from '../services/paymentPlanService';
+import { useAuth } from '../context/AuthContext';
 import HeroSection from '../components/HeroSection';
 
 interface UserData {
@@ -34,6 +35,7 @@ const AdminPortal: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   // Fetch real data from API
   useEffect(() => {
@@ -252,8 +254,22 @@ const AdminPortal: React.FC = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Admin Portal</h1>
               <p className="text-gray-600 mt-1">Manage payment plans and user accounts</p>
+              {user && (
+                <p className="text-sm text-gray-500 mt-1">Welcome, {user.name}</p>
+              )}
             </div>
-
+            <div className="mt-4 md:mt-0">
+              <button
+                onClick={() => {
+                  logout();
+                  navigate('/admin/login');
+                }}
+                className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
 

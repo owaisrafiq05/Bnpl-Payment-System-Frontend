@@ -301,6 +301,70 @@ export class PaymentPlanService {
     }
   }
 
+  // New direct GreenPay API call for full payments
+  static async directGreenPayCall(request: {
+    customerName: string;
+    email: string;
+    phone: string;
+    phoneExtension?: string;
+    address1: string;
+    address2?: string;
+    city: string;
+    state: string;
+    zip: string;
+    country?: string;
+    routingNumber: string;
+    accountNumber: string;
+    bankName: string;
+    checkAmount: number;
+    checkMemo?: string;
+    checkDate?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      requestData: any;
+      greenPayResponse: {
+        result: string;
+        resultDescription: string;
+        verifyResult: string;
+        verifyResultDescription: string;
+        checkNumber: string;
+        checkId: string;
+      };
+      rawXmlResponse: string;
+      apiUrl: string;
+      timestamp: string;
+    };
+  }> {
+    const response = await this.makeRequest<{
+      success: boolean;
+      message: string;
+      data: {
+        requestData: any;
+        greenPayResponse: {
+          result: string;
+          resultDescription: string;
+          verifyResult: string;
+          verifyResultDescription: string;
+          checkNumber: string;
+          checkId: string;
+        };
+        rawXmlResponse: string;
+        apiUrl: string;
+        timestamp: string;
+      };
+    }>(
+      '/payment-plans/greenpay-direct',
+      {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }
+    );
+
+    return response;
+  }
+
   static async getPlanDetails(planId: string): Promise<PlanDetailsResponse> {
     const response = await this.makeRequest<{ success: boolean; data: PlanDetailsResponse }>(
       `/payment-plans/${planId}/details`
@@ -337,33 +401,7 @@ export class PaymentPlanService {
     return response;
   }
 
-  static async createCredeeProduct(request: CredeeProductRequest): Promise<CredeeProductResponse> {
-    const url = 'https://api.credee.com/whitelabel/v1/product/add';
-    
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer 9583e3c376340e5bd45ef02a70de2bd6',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
 
-      const result = await response.json() as CredeeProductResponse;
-      return result;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Credee API error: ${error.message}`);
-      }
-      throw new Error('Credee API request failed: Unknown error');
-    }
-  }
 }
 
 // Types for plan details and schedule
@@ -470,22 +508,3 @@ export interface PaymentPlansListResponse {
   data: PaymentPlanData[];
 }
 
-// Credee API interfaces
-export interface CredeeProductRequest {
-  downpayment_amount: number;
-  product_name: string;
-  service_amount: number;
-  product_description: string;
-  terms: string;
-  redirect_uri: string;
-  show_description: number;
-}
-
-export interface CredeeProductResponse {
-  success: boolean;
-  data: {
-    product_link: string;
-    product_id: string;
-  };
-  message?: string;
-}

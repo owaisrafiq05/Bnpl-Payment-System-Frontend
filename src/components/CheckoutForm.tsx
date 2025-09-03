@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePaymentForm } from '../context/PaymentFormContext';
 import { PaymentPlanService } from '../services/paymentPlanService';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, CheckCircle, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import HeroSection from './HeroSection';
 
@@ -19,6 +19,10 @@ const CheckoutForm: React.FC = () => {
 
   // Form validation states
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Success modal state for full payment
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [paymentSuccessData, setPaymentSuccessData] = useState<any>(null);
 
   // Validation rules
 //   const validationRules = {
@@ -254,10 +258,10 @@ const CheckoutForm: React.FC = () => {
       const isFullPayment = state.selectedPlan.duration === 1;
       
       if (isFullPayment) {
-        // For full payment API - use totalAmount field
+        // For full payment - use totalAmount field for greenpay-direct API
         formData.append('totalAmount', state.selectedPlan.totalAmount.toString());
       } else {
-        // For installment payment API - use selectedPlan object
+        // For installment plans - use selectedPlan object for /create API
         formData.append('selectedPlan', JSON.stringify({
           duration: state.selectedPlan.duration,
           totalAmount: state.selectedPlan.totalAmount,
@@ -306,48 +310,97 @@ const CheckoutForm: React.FC = () => {
         }
       }
 
-      setUploadProgress('Submitting payment plan...');
+      setUploadProgress('Submitting payment...');
       
-      let result;
       if (isFullPayment) {
-        // Use full payment API for immediate payment processing
-        result = await PaymentPlanService.processFullPayment(formData);
-        toast.success('Full payment processed successfully!');
-      } else {
-        // Use regular installment payment API
-        result = await PaymentPlanService.createPaymentPlanWithFiles(formData);
-        toast.success('Payment plan created successfully!');
-      }
-      
-      // Log successful response details
-      console.log('Payment plan created successfully:', {
-        paymentPlanId: result.paymentPlanId,
-        customerId: result.customerId,
-        planDetails: result.planDetails,
-        firstPayment: result.firstPayment,
-        message: result.message
-      });
+        // Use direct GreenPay API for full payment plans
+        const directGreenPayRequest = {
+          customerName: state.formData.clientName,
+          email: state.checkoutData.email || '',
+          phone: state.checkoutData.phone || '',
+          phoneExtension: '',
+          address1: state.checkoutData.address1 || '',
+          address2: state.checkoutData.address2 || '',
+          city: state.checkoutData.city || '',
+          state: state.checkoutData.state || '',
+          zip: state.checkoutData.zip || '',
+          country: state.checkoutData.country || 'US',
+          routingNumber: state.checkoutData.routingNumber || '',
+          accountNumber: state.checkoutData.accountNumber || '',
+          bankName: state.checkoutData.bankName || '',
+          checkAmount: state.selectedPlan.totalAmount,
+          checkMemo: 'Full Payment - Direct GreenPay API Call',
+          checkDate: new Date().toLocaleDateString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+            year: 'numeric'
+          })
+        };
 
-      // Show GreenPay response details for successful payments
-      if (result.firstPayment?.greenPayResponse) {
-        const greenPayResponse = result.firstPayment.greenPayResponse;
-        console.log('GreenPay Response Details:', {
-          result: greenPayResponse.result,
-          resultDescription: greenPayResponse.resultDescription,
-          verifyResult: greenPayResponse.verifyResult,
-          verifyResultDescription: greenPayResponse.verifyResultDescription,
-          checkNumber: greenPayResponse.checkNumber,
-          checkId: greenPayResponse.checkId
-        });
+        const directGreenPayResult = await PaymentPlanService.directGreenPayCall(directGreenPayRequest);
         
-        // Show additional success details if available
-        if (greenPayResponse.checkNumber && greenPayResponse.checkId) {
-          toast.success(`Payment processed! Check #${greenPayResponse.checkNumber}`, { duration: 5000 });
+        // Log successful response details
+        console.log('Direct GreenPay API call successful:', directGreenPayResult.data);
+        console.log('GreenPay Response Details:', directGreenPayResult.data.greenPayResponse);
+        
+        // Check if GreenPay response indicates success (result = '0' means Data Accepted)
+        if (directGreenPayResult.data.greenPayResponse.result === '0') {
+          // Payment successful - result '0' means "Data Accepted" which indicates success
+          setPaymentSuccessData(directGreenPayResult.data);
+          setShowSuccessModal(true);
+          toast.success('Payment processed successfully!');
+        } else {
+          // Payment failed - show error
+          const errorMessage = directGreenPayResult.data.greenPayResponse.resultDescription || 
+                              directGreenPayResult.data.greenPayResponse.verifyResultDescription || 
+                              'Payment processing failed';
+          toast.error(`Payment failed: ${errorMessage}`);
+          throw new Error(`Payment failed: ${errorMessage}`);
         }
+      } else {
+        // Use create payment plan API for installment plans
+        const result = await PaymentPlanService.createPaymentPlanWithFiles(formData);
+        toast.success('Payment plan created successfully!');
+        
+        // Log successful response details
+        console.log('Payment plan created successfully:', {
+          paymentPlanId: result.paymentPlanId,
+          customerId: result.customerId,
+          planDetails: result.planDetails,
+          firstPayment: result.firstPayment,
+          message: result.message
+        });
+
+        // Show GreenPay response details for successful payments
+        if (result.firstPayment?.greenPayResponse) {
+          const greenPayResponse = result.firstPayment.greenPayResponse;
+          console.log('GreenPay Response Details:', {
+            result: greenPayResponse.result,
+            resultDescription: greenPayResponse.resultDescription,
+            verifyResult: greenPayResponse.verifyResult,
+            verifyResultDescription: greenPayResponse.verifyResultDescription,
+            checkNumber: greenPayResponse.checkNumber,
+            checkId: greenPayResponse.checkId
+          });
+          
+          // Show additional success details if available
+          if (greenPayResponse.checkNumber && greenPayResponse.checkId) {
+            toast.success(`Payment processed! Check #${greenPayResponse.checkNumber}`, { duration: 5000 });
+          }
+        }
+        
+        // Show success modal for installment plans (same as full payment)
+        setPaymentSuccessData({
+          requestData: { checkAmount: state.selectedPlan.totalAmount },
+          greenPayResponse: result.firstPayment?.greenPayResponse || {
+            result: '0',
+            resultDescription: 'Payment plan created successfully',
+            checkNumber: result.firstPayment?.greenPayResponse?.checkNumber || 'N/A',
+            checkId: result.firstPayment?.greenPayResponse?.checkId || 'N/A'
+          }
+        });
+        setShowSuccessModal(true);
       }
-      
-      // Redirect to the admin portal
-      window.location.href = `/admin`;
       
       
     } catch (error) {
@@ -983,6 +1036,66 @@ const CheckoutForm: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Success Modal for Payment */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-[#00000091] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+              
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {state.selectedPlan.duration === 1 ? 'Payment Successful! 🎉' : 'Payment Plan Created! 🎉'}
+              </h3>
+              
+              <p className="text-sm text-gray-600 mb-4">
+                {state.selectedPlan.duration === 1 
+                  ? `Your payment of ${formatCurrency(paymentSuccessData?.requestData?.checkAmount || 0)} has been processed successfully.`
+                  : `Your ${state.selectedPlan.duration}-month payment plan for ${formatCurrency(paymentSuccessData?.requestData?.checkAmount || 0)} has been created successfully.`
+                }
+              </p>
+              
+              {paymentSuccessData?.greenPayResponse?.checkNumber && (
+                <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">Check Number:</span> {paymentSuccessData.greenPayResponse.checkNumber}
+                  </p>
+                  {paymentSuccessData.greenPayResponse.checkId && (
+                    <p className="text-sm text-gray-700 mt-1">
+                      <span className="font-medium">Transaction ID:</span> {paymentSuccessData.greenPayResponse.checkId}
+                    </p>
+                  )}
+                </div>
+              )}
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    // Reset form or redirect as needed
+                    dispatch({ type: 'SET_CURRENT_STEP', payload: 1 });
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Close
+                </button>
+                
+                <button
+                  onClick={() => {
+                    window.open('https://ironclad.law/', '_blank');
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Go to Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { usePaymentForm } from "../context/PaymentFormContext"
 import type { PaymentPlan } from "../context/PaymentFormContext"
 import { ArrowLeft, CheckCircle, Clock, Loader2 } from "lucide-react"
 import HeroSection from "./HeroSection"
-import { PaymentPlanService, type CredeeProductRequest } from "../services/paymentPlanService"
+
 import { toast } from "sonner"
 
 interface PaymentPlansProps {
@@ -23,7 +23,7 @@ interface PaymentPlansProps {
 }
 
 const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan, onBack }) => {
-  const { state, dispatch } = usePaymentForm()
+  const { dispatch } = usePaymentForm()
   const [isLoading, setIsLoading] = React.useState(false)
 
   const formatCurrency = (amount: number): string => {
@@ -40,60 +40,14 @@ const PaymentPlans: React.FC<PaymentPlansProps> = ({ paymentPlans, onSelectPlan,
       // Save selected plan to global state
       dispatch({ type: "SET_SELECTED_PLAN", payload: plan })
 
-      // Check if this is a pay-in-full plan (duration = 1)
-      if (plan.duration === 1) {
-        // For pay-in-full plans, redirect to checkout page
-        dispatch({ type: "SET_CURRENT_STEP", payload: 3 })
-        onSelectPlan(plan)
-        return
-      }
-
-      // For plans with interest, call the Credee API
-      // Get the user's upfront payment from form data
-      const userUpfrontPayment = parseFloat(state.formData.upfrontPayment) || 0
-      const userTotalAmount = parseFloat(state.formData.amount) || 0
-      const serviceAmount = userTotalAmount
+      // For all plans (both full payment and installment), redirect to checkout page
+      dispatch({ type: "SET_CURRENT_STEP", payload: 3 })
+      onSelectPlan(plan)
       
-      // Debug: Log the plan data to understand the structure
-      console.log('Plan data:', plan)
-      console.log('Form data:', state.formData)
-      console.log('User upfront payment:', userUpfrontPayment)
-      console.log('User total amount:', userTotalAmount)
-      console.log('Calculated service amount:', serviceAmount)
-      
-      const credeeRequest: CredeeProductRequest = {
-        downpayment_amount: userUpfrontPayment, // Use the user's input for upfront payment
-        product_name: `${plan.duration} Month Plan`,
-        service_amount: serviceAmount, // Use the total amount the user enters
-        product_description: `Plan ID: ${plan.duration}`, // Using plan duration as plan ID
-        terms: plan.duration.toString(),
-        redirect_uri: "https://google.com/",
-        show_description: 1
-      }
-      
-      // Debug: Log the request payload
-      console.log('Credee API Request:', credeeRequest)
-
-      const response = await PaymentPlanService.createCredeeProduct(credeeRequest)
-      
-      // Debug: Log the full response to understand the structure
-      console.log('Credee API Response:', response)
-      
-      // Always redirect to product link for interest plans
-      if (response && response.data && response.data.product_link) {
-        // Redirect to the product link
-        window.location.href = response.data.product_link
-      } else {
-        // If no product link, show error but don't redirect to checkout
-        console.error('No product link received. Full response:', response)
-        toast.error('Failed to create payment link. Please try again.')
-      }
+      toast.success('Plan selected successfully! Please proceed to checkout.')
     } catch (error) {
       console.error('Error handling plan selection:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to process plan selection')
-      
-      // For interest plans, don't redirect to checkout on error - let user try again
-      // Only redirect to checkout for pay-in-full plans
     } finally {
       setIsLoading(false)
     }
