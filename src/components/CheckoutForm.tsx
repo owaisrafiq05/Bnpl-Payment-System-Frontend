@@ -24,6 +24,11 @@ const CheckoutForm: React.FC = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [paymentSuccessData, setPaymentSuccessData] = useState<any>(null);
 
+  // Zelle modal state
+  const [showZelleModal, setShowZelleModal] = useState(false);
+  const [showZelleProofModal, setShowZelleProofModal] = useState(false);
+  const [zelleProofFile, setZelleProofFile] = useState<File | null>(null);
+
   // Validation rules
 //   const validationRules = {
 //     customerName: { required: true, minLength: 2 },
@@ -85,17 +90,22 @@ const CheckoutForm: React.FC = () => {
     if (!state.checkoutData.zip?.trim()) {
       newErrors.zip = 'ZIP code is required';
     }
-    if (!state.checkoutData.routingNumber?.trim()) {
-      newErrors.routingNumber = 'Routing number is required';
-    } else if (!/^\d{9}$/.test(state.checkoutData.routingNumber)) {
-      newErrors.routingNumber = 'Routing number must be exactly 9 digits';
+    
+    // Only validate bank details for eCheck payment
+    if (selectedPayment === 'echeck') {
+      if (!state.checkoutData.routingNumber?.trim()) {
+        newErrors.routingNumber = 'Routing number is required';
+      } else if (!/^\d{9}$/.test(state.checkoutData.routingNumber)) {
+        newErrors.routingNumber = 'Routing number must be exactly 9 digits';
+      }
+      if (!state.checkoutData.accountNumber?.trim()) {
+        newErrors.accountNumber = 'Account number is required';
+      }
+      if (!state.checkoutData.bankName?.trim()) {
+        newErrors.bankName = 'Bank name is required';
+      }
     }
-    if (!state.checkoutData.accountNumber?.trim()) {
-      newErrors.accountNumber = 'Account number is required';
-    }
-    if (!state.checkoutData.bankName?.trim()) {
-      newErrors.bankName = 'Bank name is required';
-    }
+    
     if (!signatureData) {
       newErrors.signature = 'Digital signature is required';
     }
@@ -248,6 +258,15 @@ const CheckoutForm: React.FC = () => {
     setUploadProgress('Preparing submission...');
     
     try {
+      // Handle Zelle payment differently
+      if (selectedPayment === 'zelle') {
+        // For Zelle payments, show the Zelle confirmation modal
+        setShowZelleModal(true);
+        setIsSubmitting(false);
+        setUploadProgress('');
+        return;
+      }
+
       // Create FormData for file upload support
       const formData = new FormData();
       
@@ -433,6 +452,99 @@ const CheckoutForm: React.FC = () => {
       } else {
         toast.error(errorMessage);
       }
+    } finally {
+      setIsSubmitting(false);
+      setUploadProgress('');
+    }
+  };
+
+  const handleZellePaymentSubmission = async () => {
+    if (!zelleProofFile) {
+      toast.error('Please upload proof of payment');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setUploadProgress('Submitting Zelle payment...');
+
+    try {
+      // Create FormData for Zelle payment
+      const formData = new FormData();
+      
+      // Add payment type
+      formData.append('paymentType', 'zelle');
+      
+      // Check if this is a full payment (duration = 1) or installment plan
+      const isFullPayment = state.selectedPlan?.duration === 1;
+      
+      if (isFullPayment) {
+        formData.append('totalAmount', state.selectedPlan?.totalAmount.toString() || '0');
+      } else {
+        formData.append('selectedPlan', JSON.stringify({
+          duration: state.selectedPlan?.duration || 1,
+          totalAmount: state.selectedPlan?.totalAmount || 0,
+          monthlyPayment: state.selectedPlan?.monthlyPayment || 0,
+          interestAmount: state.selectedPlan?.interestAmount || 0,
+          upfrontPayment: state.selectedPlan?.upfrontPayment || 0,
+          remainingAmount: state.selectedPlan?.remainingAmount || 0
+        }));
+      }
+      
+      // Add customer data
+      formData.append('customerName', state.formData.clientName);
+      formData.append('email', state.checkoutData.email || '');
+      formData.append('phone', state.checkoutData.phone || '');
+      formData.append('phoneExtension', '');
+      formData.append('address1', state.checkoutData.address1 || '');
+      formData.append('address2', state.checkoutData.address2 || '');
+      formData.append('city', state.checkoutData.city || '');
+      formData.append('state', state.checkoutData.state || '');
+      formData.append('zip', state.checkoutData.zip || '');
+      formData.append('country', state.checkoutData.country || 'US');
+      
+      // Add Zelle proof file
+      formData.append('zelleProof', zelleProofFile);
+      
+      // Add files if present
+      if (photoIdFile) {
+        formData.append('photoId', photoIdFile);
+      }
+      
+      // Convert signature canvas to blob and add if present
+      if (signatureData && signatureCanvas) {
+        try {
+          const dataURL = signatureCanvas.toDataURL('image/png', 0.8);
+          const response = await fetch(dataURL);
+          const blob = await response.blob();
+          formData.append('digitalSignature', blob, 'signature.png');
+        } catch (signatureError) {
+          console.warn('Could not convert signature to blob:', signatureError);
+        }
+      }
+
+      setUploadProgress('Processing Zelle payment...');
+      
+      // Call Zelle payment API
+      const result = await PaymentPlanService.createZellePayment(formData);
+      
+      toast.success('Zelle payment submitted successfully!');
+      
+      // Show success modal
+      setPaymentSuccessData({
+        requestData: { checkAmount: state.selectedPlan?.totalAmount || 0 },
+        greenPayResponse: {
+          result: '0',
+          resultDescription: 'Zelle payment submitted successfully',
+          checkNumber: 'Zelle Payment',
+          checkId: result.data?.paymentId || 'N/A'
+        }
+      });
+      setShowSuccessModal(true);
+      setShowZelleProofModal(false);
+      
+    } catch (error) {
+      console.error('Error submitting Zelle payment:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to submit Zelle payment');
     } finally {
       setIsSubmitting(false);
       setUploadProgress('');
@@ -656,10 +768,60 @@ const CheckoutForm: React.FC = () => {
                     }`}
                   >
                     <option value="">Select State</option>
+                    <option value="AL">Alabama</option>
                     <option value="AK">Alaska</option>
+                    <option value="AZ">Arizona</option>
+                    <option value="AR">Arkansas</option>
                     <option value="CA">California</option>
+                    <option value="CO">Colorado</option>
+                    <option value="CT">Connecticut</option>
+                    <option value="DE">Delaware</option>
+                    <option value="DC">District of Columbia</option>
+                    <option value="FL">Florida</option>
+                    <option value="GA">Georgia</option>
+                    <option value="HI">Hawaii</option>
+                    <option value="ID">Idaho</option>
+                    <option value="IL">Illinois</option>
+                    <option value="IN">Indiana</option>
+                    <option value="IA">Iowa</option>
+                    <option value="KS">Kansas</option>
+                    <option value="KY">Kentucky</option>
+                    <option value="LA">Louisiana</option>
+                    <option value="ME">Maine</option>
+                    <option value="MD">Maryland</option>
+                    <option value="MA">Massachusetts</option>
+                    <option value="MI">Michigan</option>
+                    <option value="MN">Minnesota</option>
+                    <option value="MS">Mississippi</option>
+                    <option value="MO">Missouri</option>
+                    <option value="MT">Montana</option>
+                    <option value="NE">Nebraska</option>
+                    <option value="NV">Nevada</option>
+                    <option value="NH">New Hampshire</option>
+                    <option value="NJ">New Jersey</option>
+                    <option value="NM">New Mexico</option>
                     <option value="NY">New York</option>
+                    <option value="NC">North Carolina</option>
+                    <option value="ND">North Dakota</option>
+                    <option value="OH">Ohio</option>
+                    <option value="OK">Oklahoma</option>
+                    <option value="OR">Oregon</option>
+                    <option value="PA">Pennsylvania</option>
+                    <option value="RI">Rhode Island</option>
+                    <option value="SC">South Carolina</option>
+                    <option value="SD">South Dakota</option>
+                    <option value="TN">Tennessee</option>
                     <option value="TX">Texas</option>
+                    <option value="UT">Utah</option>
+                    <option value="VT">Vermont</option>
+                    <option value="VA">Virginia</option>
+                    <option value="WA">Washington</option>
+                    <option value="WV">West Virginia</option>
+                    <option value="WI">Wisconsin</option>
+                    <option value="WY">Wyoming</option>
+                    <option value="AA">Armed Forces (AA)</option>
+                    <option value="AE">Armed Forces (AE)</option>
+                    <option value="AP">Armed Forces (AP)</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 </div>
@@ -846,22 +1008,35 @@ const CheckoutForm: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {selectedPayment === 'zelle' && (
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm font-medium text-gray-700 mb-4">Pay by Zelle - Simple and secure payment method.</p>
+                    <div className="text-sm text-gray-600">
+                      <p>• No need to enter routing or account numbers</p>
+                      <p>• Payment will be processed through Zelle</p>
+                      <p>• You'll receive payment instructions after form submission</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Pay by Zelle */}
-              <div>
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="zelle"
-                    checked={selectedPayment === 'zelle'}
-                    onChange={(e) => setSelectedPayment(e.target.value)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Pay by Zelle</span>
-                </label>
-              </div>
+              {/* Pay by Zelle - Only for full payments */}
+              {state.selectedPlan.duration === 1 && (
+                <div>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="zelle"
+                      checked={selectedPayment === 'zelle'}
+                      onChange={(e) => setSelectedPayment(e.target.value)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Pay by Zelle</span>
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* Privacy Policy */}
@@ -1037,6 +1212,213 @@ const CheckoutForm: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Zelle Payment Modal */}
+      {showZelleModal && (
+        <div className="fixed inset-0 bg-[#00000091] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Complete Your Zelle Payment</h3>
+              <button
+                onClick={() => setShowZelleModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Left side - Payment method selection */}
+              <div>
+                <h4 className="text-lg font-medium text-gray-800 mb-4">PAY WITH</h4>
+                <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">Z</span>
+                  </div>
+                  <span className="text-lg font-medium text-gray-800">Zelle</span>
+                </div>
+              </div>
+
+              {/* Right side - Payment details and instructions */}
+              <div>
+                <div className="mb-6">
+                  <h4 className="text-2xl font-bold text-gray-900 mb-2">
+                    Pay {formatCurrency(state.selectedPlan?.totalAmount || 0)}
+                  </h4>
+                  <p className="text-gray-600">{state.checkoutData.email}</p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <p className="text-sm font-medium text-gray-700 mb-3">
+                    Transfer <strong>{formatCurrency(state.selectedPlan?.totalAmount || 0)}</strong> to the Zelle account details below:
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">PLATFORM:</span>
+                      <span className="text-sm font-medium text-gray-900">Zelle</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">EMAIL ADDRESS:</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-900">accounting@ironclad.law</span>
+                        <button
+                          onClick={() => navigator.clipboard.writeText('accounting@ironclad.law')}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">AMOUNT:</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-900">{formatCurrency(state.selectedPlan?.totalAmount || 0)}</span>
+                        <button
+                          onClick={() => navigator.clipboard.writeText((state.selectedPlan?.totalAmount || 0).toString())}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">ACCOUNT NAME:</span>
+                      <span className="text-sm font-medium text-gray-900">Ironclad Law Zelle</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-6">
+                  After making the payment, make sure you take a screenshot or save your receipt.
+                </p>
+
+                <button
+                  onClick={() => {
+                    setShowZelleModal(false);
+                    setShowZelleProofModal(true);
+                  }}
+                  className="w-full bg-gray-800 text-white py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors font-medium"
+                >
+                  I have sent the money
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Zelle Proof Upload Modal */}
+      {showZelleProofModal && (
+        <div className="fixed inset-0 bg-[#00000091] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Upload Payment Proof</h3>
+              <button
+                onClick={() => setShowZelleProofModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Left side - Payment method */}
+              <div>
+                <h4 className="text-lg font-medium text-gray-800 mb-4">PAY WITH</h4>
+                <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">Z</span>
+                  </div>
+                  <span className="text-lg font-medium text-gray-800">Zelle</span>
+                </div>
+              </div>
+
+              {/* Right side - Upload proof */}
+              <div>
+                <div className="mb-6">
+                  <h4 className="text-2xl font-bold text-gray-900 mb-2">
+                    Pay {formatCurrency(state.selectedPlan?.totalAmount || 0)}
+                  </h4>
+                  <p className="text-gray-600">{state.checkoutData.email}</p>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-6">
+                  Upload your proof of payment below - receipt or screenshot. We'll verify and confirm your payment soon.
+                </p>
+
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-6">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 10 * 1024 * 1024) {
+                          toast.error('File size must be less than 10MB');
+                          return;
+                        }
+                        setZelleProofFile(file);
+                        toast.success(`File "${file.name}" selected successfully`);
+                      }
+                    }}
+                    className="hidden"
+                    id="zelle-proof-upload"
+                  />
+                  <label htmlFor="zelle-proof-upload" className="cursor-pointer">
+                    {zelleProofFile ? (
+                      <div className="text-green-600">
+                        <svg className="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-sm font-medium">{zelleProofFile.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {(zelleProofFile.size / 1024 / 1024).toFixed(2)} MB • Click to change
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-gray-500">
+                        <svg className="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p className="text-sm font-medium text-gray-600">Choose file</p>
+                        <p className="text-xs text-gray-500 mt-1">Max size: 10MB</p>
+                      </div>
+                    )}
+                  </label>
+                </div>
+
+                <button
+                  onClick={handleZellePaymentSubmission}
+                  disabled={!zelleProofFile || isSubmitting}
+                  className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${
+                    zelleProofFile && !isSubmitting
+                      ? 'bg-gray-800 hover:bg-gray-900 text-white'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit for confirmation'}
+                </button>
+
+                <button
+                  onClick={() => setShowZelleProofModal(false)}
+                  className="w-full mt-3 text-sm text-gray-600 hover:text-gray-800 underline"
+                >
+                  Show account details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Success Modal for Payment */}
       {showSuccessModal && (

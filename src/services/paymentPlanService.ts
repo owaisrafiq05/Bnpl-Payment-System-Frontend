@@ -401,6 +401,45 @@ export class PaymentPlanService {
     return response;
   }
 
+  // Zelle payment method
+  static async createZellePayment(
+    formData: FormData
+  ): Promise<{
+    success: boolean;
+    data: {
+      paymentId: string;
+      customerId: string;
+      message: string;
+    };
+  }> {
+    const url = `${API_BASE_URL}/payment-plans/zelle`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData, // Don't set Content-Type header - let browser set it with boundary
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create Zelle payment');
+      }
+
+      return result;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`${error.message}`);
+      }
+      throw new Error('API request failed: Unknown error');
+    }
+  }
+
 
 }
 
@@ -478,6 +517,26 @@ export interface PaymentPlanData {
       routingNumber?: string;
       accountNumber?: string;
       bankName?: string;
+    };
+    verificationDocuments?: {
+      photoId?: {
+        url: string;
+        filename: string;
+        uploadDate: string;
+        verified: boolean;
+      };
+      digitalSignature?: {
+        url: string;
+        filename: string;
+        uploadDate: string;
+        verified: boolean;
+      };
+      zelleProof?: {
+        url: string;
+        filename: string;
+        uploadDate: string;
+        verified: boolean;
+      };
     };
   };
   principalAmount?: number;

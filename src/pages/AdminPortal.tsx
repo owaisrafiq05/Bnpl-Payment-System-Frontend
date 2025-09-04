@@ -10,8 +10,9 @@ interface UserData {
   name: string;
   email: string;
   phone: string;
-  status: 'active' | 'completed' | 'failed' | 'pending';
+  status: 'active' | 'completed' | 'failed' | 'pending' | 'pending_zelle_verification';
   paymentType: 'single_payment' | '3_months' | '6_months' | '12_months';
+  paymentMethod: 'echeck' | 'zelle';
   principalAmount: number;
   totalAmount: number;
   monthlyPayment: number;
@@ -24,6 +25,12 @@ interface UserData {
   accountNumber: string;
   routingNumber: string;
   bankName: string;
+  zelleProof?: {
+    url: string;
+    filename: string;
+    uploadDate: string;
+    verified: boolean;
+  };
 }
 
 const AdminPortal: React.FC = () => {
@@ -34,6 +41,9 @@ const AdminPortal: React.FC = () => {
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
+  const [showScreenshotModal, setShowScreenshotModal] = useState(false);
+  const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(null);
+  const [isProcessingAction, setIsProcessingAction] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -49,6 +59,7 @@ const AdminPortal: React.FC = () => {
         // Debug: Log the actual API response structure
         console.log('API Response:', response);
         console.log('First plan data:', response.data[0]);
+        console.log('Customer verification documents:', response.data[0]?.customerId?.verificationDocuments);
         
         // Check if response has data array
         if (!response.data || !Array.isArray(response.data)) {
@@ -92,8 +103,9 @@ const AdminPortal: React.FC = () => {
             name: plan.customerId?.name || 'Unknown',
             email: plan.customerId?.email || 'N/A',
             phone: plan.customerId?.phone || 'N/A',
-            status: plan.status as 'active' | 'completed' | 'failed' | 'pending',
+            status: plan.status as 'active' | 'completed' | 'failed' | 'pending' | 'pending_zelle_verification',
             paymentType: getPaymentType(plan.planDuration || 1) as 'single_payment' | '3_months' | '6_months' | '12_months',
+            paymentMethod: (plan as any).paymentMethod || 'echeck',
             principalAmount: plan.principalAmount || 0,
             totalAmount: plan.totalAmountWithInterest || 0,
             monthlyPayment: plan.monthlyPayment || 0,
@@ -105,7 +117,12 @@ const AdminPortal: React.FC = () => {
             createdDate: plan.createdAt ? plan.createdAt.split('T')[0] : 'N/A',
             accountNumber: maskedAccountNumber,
             routingNumber: bankDetails.routingNumber || 'N/A',
-            bankName: bankDetails.bankName || 'N/A'
+            bankName: bankDetails.bankName || 'N/A',
+            zelleProof: (() => {
+              const proof = (plan.customerId as any)?.verificationDocuments?.zelleProof;
+              console.log('Zelle proof for plan', plan._id, ':', proof);
+              return proof;
+            })()
           };
           } catch (transformError) {
             console.error(`Error transforming plan ${index}:`, transformError, plan);
@@ -117,6 +134,7 @@ const AdminPortal: React.FC = () => {
               phone: 'N/A',
               status: 'pending' as const,
               paymentType: 'single_payment' as const,
+              paymentMethod: 'echeck' as const,
               principalAmount: 0,
               totalAmount: 0,
               monthlyPayment: 0,
@@ -128,7 +146,8 @@ const AdminPortal: React.FC = () => {
               createdDate: 'N/A',
               accountNumber: 'N/A',
               routingNumber: 'N/A',
-              bankName: 'N/A'
+              bankName: 'N/A',
+              zelleProof: undefined
             };
           }
         });
@@ -161,22 +180,30 @@ const AdminPortal: React.FC = () => {
     });
   };
 
-  const formatPaymentType = (paymentType: string): string => {
-    switch (paymentType) {
-      case 'single_payment':
-        return 'Single Payment';
-      case '3_months':
-        return '3 Months';
-      case '6_months':
-        return '6 Months';
-      case '12_months':
-        return '12 Months';
-      default:
-        return paymentType;
-    }
+  const formatPaymentType = (paymentType: string, paymentMethod: string): string => {
+    const baseType = (() => {
+      switch (paymentType) {
+        case 'single_payment':
+          return 'Single Payment';
+        case '3_months':
+          return '3 Months';
+        case '6_months':
+          return '6 Months';
+        case '12_months':
+          return '12 Months';
+        default:
+          return paymentType;
+      }
+    })();
+    
+    return paymentMethod === 'zelle' ? `${baseType} (Zelle)` : baseType;
   };
 
-  const getPaymentTypeColor = (paymentType: string): string => {
+  const getPaymentTypeColor = (paymentType: string, paymentMethod: string): string => {
+    if (paymentMethod === 'zelle') {
+      return 'bg-orange-100 text-orange-800';
+    }
+    
     switch (paymentType) {
       case 'single_payment':
         return 'bg-green-100 text-green-800';
@@ -191,6 +218,36 @@ const AdminPortal: React.FC = () => {
     }
   };
 
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      case 'pending_zelle_verification':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      case 'pending':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatStatus = (status: string): string => {
+    switch (status) {
+      case 'pending_zelle_verification':
+        return 'Pending Zelle';
+      case 'single_payment':
+        return 'Single Payment';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
   // Filter users based on search and payment type
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
@@ -198,7 +255,9 @@ const AdminPortal: React.FC = () => {
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.id.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesPaymentType = paymentTypeFilter === 'all' || user.paymentType === paymentTypeFilter;
+    const matchesPaymentType = paymentTypeFilter === 'all' || 
+      user.paymentType === paymentTypeFilter ||
+      (paymentTypeFilter === 'zelle' && user.paymentMethod === 'zelle');
     
     return matchesSearch && matchesPaymentType;
   });
@@ -212,6 +271,65 @@ const AdminPortal: React.FC = () => {
   // Handle row click to navigate to plan details
   const handleRowClick = (planId: string) => {
     navigate(`/plan-details/${planId}`);
+  };
+
+  // Handle screenshot view
+  const handleViewScreenshot = (e: React.MouseEvent, screenshotUrl: string) => {
+    e.stopPropagation(); // Prevent row click
+    setSelectedScreenshot(screenshotUrl);
+    setShowScreenshotModal(true);
+  };
+
+  // Close screenshot modal
+  const closeScreenshotModal = () => {
+    setShowScreenshotModal(false);
+    setSelectedScreenshot(null);
+  };
+
+  // Handle Zelle payment approval/rejection
+  const handleZelleAction = async (paymentId: string, action: 'approve' | 'reject') => {
+    if (isProcessingAction) return; // Prevent multiple simultaneous actions
+    
+    setIsProcessingAction(paymentId);
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/payment-plans/zelle/${paymentId}/${action}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${action} payment`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update the user status in local state
+        setUsers(prevUsers => 
+          prevUsers.map(user => 
+            user.id === paymentId 
+              ? { 
+                  ...user, 
+                  status: action === 'approve' ? 'completed' : 'failed' as const,
+                  zelleProof: user.zelleProof ? { ...user.zelleProof, verified: action === 'approve' } : undefined
+                }
+              : user
+          )
+        );
+        
+        alert(`Payment ${action}d successfully!`);
+      } else {
+        throw new Error(result.error || `Failed to ${action} payment`);
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing payment:`, error);
+      alert(`Failed to ${action} payment. Please try again.`);
+    } finally {
+      setIsProcessingAction(null);
+    }
   };
 
 
@@ -298,6 +416,7 @@ const AdminPortal: React.FC = () => {
                 <option value="3_months">3 Months</option>
                 <option value="6_months">6 Months</option>
                 <option value="12_months">12 Months</option>
+                <option value="zelle">Zelle Payments</option>
               </select>
             </div>
             
@@ -316,6 +435,7 @@ const AdminPortal: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Info</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan Details</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Financial Info</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Type</th>
                 </tr>
               </thead>
@@ -354,11 +474,63 @@ const AdminPortal: React.FC = () => {
                       </div>
                     </td>
 
+                    {/* Status */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(user.status)}`}>
+                        {formatStatus(user.status)}
+                      </span>
+                    </td>
+
                     {/* Payment Type */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentTypeColor(user.paymentType)}`}>
-                        {formatPaymentType(user.paymentType)}
-                      </span>
+                      <div className="flex flex-col space-y-2">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentTypeColor(user.paymentType, user.paymentMethod)}`}>
+                          {formatPaymentType(user.paymentType, user.paymentMethod)}
+                        </span>
+                        {user.paymentMethod === 'zelle' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (user.zelleProof?.url) {
+                                handleViewScreenshot(e, user.zelleProof.url);
+                              } else {
+                                alert('No screenshot available for this Zelle payment');
+                              }
+                            }}
+                            className={`px-2 py-1 text-xs rounded transition-colors ${
+                              user.zelleProof?.url 
+                                ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' 
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            {user.zelleProof?.url ? 'View SS' : 'No SS'}
+                          </button>
+                        )}
+                        {user.paymentMethod === 'zelle' && user.status === 'pending_zelle_verification' && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleZelleAction(user.id, 'approve');
+                              }}
+                              disabled={isProcessingAction === user.id}
+                              className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200 transition-colors disabled:opacity-50"
+                            >
+                              {isProcessingAction === user.id ? 'Processing...' : 'Approve'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleZelleAction(user.id, 'reject');
+                              }}
+                              disabled={isProcessingAction === user.id}
+                              className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors disabled:opacity-50"
+                            >
+                              {isProcessingAction === user.id ? 'Processing...' : 'Reject'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -428,6 +600,46 @@ const AdminPortal: React.FC = () => {
         </div>
         </div>
       </div>
+
+      {/* Screenshot Modal */}
+      {showScreenshotModal && selectedScreenshot && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Zelle Payment Proof</h3>
+              <button
+                onClick={closeScreenshotModal}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+            <div className="space-y-4">
+              <img
+                src={selectedScreenshot}
+                alt="Zelle Payment Proof"
+                className="max-w-full h-auto rounded-lg shadow-lg"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/placeholder-image.png';
+                  target.alt = 'Image failed to load';
+                }}
+              />
+              <div className="text-sm text-gray-600">
+                <p>This is the payment proof screenshot uploaded by the customer for their Zelle payment.</p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={closeScreenshotModal}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
