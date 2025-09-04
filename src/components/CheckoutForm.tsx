@@ -96,9 +96,6 @@ const CheckoutForm: React.FC = () => {
     if (!state.checkoutData.bankName?.trim()) {
       newErrors.bankName = 'Bank name is required';
     }
-    if (!photoIdFile) {
-      newErrors.photoId = 'Photo ID is required';
-    }
     if (!signatureData) {
       newErrors.signature = 'Digital signature is required';
     }
@@ -541,7 +538,7 @@ const CheckoutForm: React.FC = () => {
               {/* Upload Photo ID */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload Photo ID <span className="text-red-500">*</span>
+                  Upload Photo ID (Optional)
                 </label>
                 <div className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-gray-400 transition-colors ${
                   photoIdFile ? 'border-green-300 bg-green-50' : errors.photoId ? 'border-red-300 bg-red-50' : 'border-gray-300'
@@ -755,9 +752,13 @@ const CheckoutForm: React.FC = () => {
                   {state.selectedPlan.duration === 1 && ' 🎉'}
                 </span>
               </div>
-              <div className="flex justify-between items-center text-lg font-bold text-gray-800">
+              <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
                 <span>Total</span>
-                <span>{formatCurrency(state.selectedPlan.totalAmount)}</span>
+                <span className='font-semibold text-gray-800'>{formatCurrency(state.selectedPlan.totalAmount)}</span>
+              </div>
+              <div className='flex justify-between items-center text-xl text-gray-600 mb-4 font-semibold'>
+                <span>Payable Today</span>
+                <span className='font-semibold text-gray-800'>{formatCurrency(state.selectedPlan.monthlyPayment)}</span>
               </div>
             </div>
 

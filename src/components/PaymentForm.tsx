@@ -8,9 +8,7 @@ const PaymentForm: React.FC = () => {
   const { state, dispatch } = usePaymentForm();
   const [amount, setAmount] = useState('');
   const [clientName, setClientName] = useState('');
-  const [note, setNote] = useState('');
   const [upfrontPayment, setUpfrontPayment] = useState('');
-  const [showNote, setShowNote] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -18,7 +16,6 @@ const PaymentForm: React.FC = () => {
   useEffect(() => {
     setAmount(state.formData.amount);
     setClientName(state.formData.clientName);
-    setNote(state.formData.note);
     setUpfrontPayment(state.formData.upfrontPayment);
   }, [state.formData]);
 
@@ -59,7 +56,7 @@ const PaymentForm: React.FC = () => {
       // Update global state
       dispatch({
         type: 'UPDATE_FORM_DATA',
-        payload: { amount, clientName, note, upfrontPayment }
+        payload: { amount, clientName, upfrontPayment }
       });
 
       // Call API to calculate payment plans
@@ -97,9 +94,6 @@ const PaymentForm: React.FC = () => {
         break;
       case 'clientName':
         setClientName(value);
-        break;
-      case 'note':
-        setNote(value);
         break;
       case 'upfrontPayment':
         setUpfrontPayment(value);
@@ -196,31 +190,6 @@ const PaymentForm: React.FC = () => {
             </p>
           </div>
 
-          {/* Note Field */}
-          <div>
-            {!showNote ? (
-              <button
-                type="button"
-                onClick={() => setShowNote(true)}
-                className="text-blue-600 hover:text-blue-700 text-sm underline"
-              >
-                + Add a note
-              </button>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Note (optional)
-                </label>
-                <textarea
-                  value={note}
-                  onChange={(e) => handleInputChange('note', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                  rows={3}
-                  placeholder="Enter any additional notes..."
-                />
-              </div>
-            )}
-          </div>
 
           {/* Submit Button */}
           <button
