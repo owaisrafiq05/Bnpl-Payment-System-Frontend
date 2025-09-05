@@ -11,13 +11,62 @@ const PaymentForm: React.FC = () => {
   const [upfrontPayment, setUpfrontPayment] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAutoFilled, setIsAutoFilled] = useState(false);
+  const [autoSubmitSuccess, setAutoSubmitSuccess] = useState(false);
 
-  // Sync local state with global state
+  // Parse URL parameters and auto-fill form
   useEffect(() => {
-    setAmount(state.formData.amount);
-    setClientName(state.formData.clientName);
-    setUpfrontPayment(state.formData.upfrontPayment);
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlAmount = urlParams.get('amount');
+    const urlClientName = urlParams.get('client_name');
+    const urlDownPayment = urlParams.get('down_payment');
+
+    // If URL parameters exist, use them to auto-fill the form
+    if (urlAmount || urlClientName || urlDownPayment) {
+      // Validate URL parameters before setting
+      const newErrors: Record<string, string> = {};
+      
+      if (urlAmount && (isNaN(parseFloat(urlAmount)) || parseFloat(urlAmount) <= 0)) {
+        newErrors.amount = 'Invalid amount in URL parameter';
+      }
+      
+      if (urlDownPayment && (isNaN(parseFloat(urlDownPayment)) || parseFloat(urlDownPayment) < 0)) {
+        newErrors.upfrontPayment = 'Invalid down payment in URL parameter';
+      }
+      
+      if (urlDownPayment && urlAmount && parseFloat(urlDownPayment) >= parseFloat(urlAmount)) {
+        newErrors.upfrontPayment = 'Down payment must be less than total amount';
+      }
+      
+      setErrors(newErrors);
+      
+      // Only proceed if no validation errors
+      if (Object.keys(newErrors).length === 0) {
+        if (urlAmount) setAmount(urlAmount);
+        if (urlClientName) setClientName(urlClientName);
+        if (urlDownPayment) setUpfrontPayment(urlDownPayment);
+        
+        setIsAutoFilled(true);
+      }
+    } else {
+      // Sync with global state if no URL parameters
+      setAmount(state.formData.amount);
+      setClientName(state.formData.clientName);
+      setUpfrontPayment(state.formData.upfrontPayment);
+    }
   }, [state.formData]);
+
+  // Auto-submit form when URL parameters are present
+  useEffect(() => {
+    if (isAutoFilled && amount && clientName) {
+      // Small delay to ensure form is properly filled
+      const timer = setTimeout(() => {
+        handleAutoSubmit();
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isAutoFilled, amount, clientName]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -41,6 +90,53 @@ const PaymentForm: React.FC = () => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleAutoSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Update global state
+      dispatch({
+        type: 'UPDATE_FORM_DATA',
+        payload: { amount, clientName, upfrontPayment }
+      });
+
+      // Call API to calculate payment plans
+      const response = await PaymentPlanService.calculatePaymentPlans({
+        principalAmount: parseFloat(amount),
+        customerName: clientName,
+        upfrontPayment: upfrontPayment.trim() ? parseFloat(upfrontPayment) : 0
+      });
+
+      // Save payment plans to global state
+      dispatch({
+        type: 'SET_PAYMENT_PLANS',
+        payload: response
+      });
+
+      // Navigate to step 2
+      dispatch({
+        type: 'SET_CURRENT_STEP',
+        payload: 2
+      });
+
+      // Show success message for auto-submit
+      if (isAutoFilled) {
+        setAutoSubmitSuccess(true);
+        toast.success('Payment plans calculated successfully! Redirecting to plan selection...');
+      }
+
+    } catch (error) {
+      console.error('Error calculating payment plans:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to calculate payment plans');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,8 +211,25 @@ const PaymentForm: React.FC = () => {
             Payment Form
           </h1>
           <p className="text-gray-600">
-            Enter payment details to calculate available plans
+            {isAutoFilled ? 'Auto-filling form from URL parameters...' : 'Enter payment details to calculate available plans'}
           </p>
+          {isAutoFilled && (
+            <div className="mt-2 flex items-center justify-center">
+              {autoSubmitSuccess ? (
+                <div className="flex items-center text-green-600">
+                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm">Redirecting to payment plans...</span>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                  <span className="text-sm text-blue-600">Processing payment plans...</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -133,9 +246,10 @@ const PaymentForm: React.FC = () => {
                 type="text"
                 value={amount}
                 onChange={(e) => handleInputChange('amount', e.target.value)}
+                disabled={isAutoFilled && isSubmitting}
                 className={`w-full pl-8 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent ${
                   errors.amount ? 'border-red-500' : 'border-gray-300'
-                }`}
+                } ${isAutoFilled && isSubmitting ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 placeholder="0.00"
               />
             </div>
@@ -153,9 +267,10 @@ const PaymentForm: React.FC = () => {
               type="text"
               value={clientName}
               onChange={(e) => handleInputChange('clientName', e.target.value)}
+              disabled={isAutoFilled && isSubmitting}
               className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent ${
                 errors.clientName ? 'border-red-500' : 'border-gray-300'
-              }`}
+              } ${isAutoFilled && isSubmitting ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               placeholder="Enter client name"
             />
             {errors.clientName && (
@@ -176,9 +291,10 @@ const PaymentForm: React.FC = () => {
                 type="text"
                 value={upfrontPayment}
                 onChange={(e) => handleInputChange('upfrontPayment', e.target.value)}
+                disabled={isAutoFilled && isSubmitting}
                 className={`w-full pl-8 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent ${
                   errors.upfrontPayment ? 'border-red-500' : 'border-gray-300'
-                }`}
+                } ${isAutoFilled && isSubmitting ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 placeholder="0.00"
               />
             </div>
@@ -194,9 +310,9 @@ const PaymentForm: React.FC = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || (isAutoFilled && isSubmitting)}
             className={`w-full py-3 px-6 rounded font-medium transition-colors rounded-xl ${
-              isSubmitting
+              isSubmitting || (isAutoFilled && isSubmitting)
                 ? 'bg-gray-400 text-gray-500 cursor-not-allowed' 
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
             }`}
@@ -204,7 +320,7 @@ const PaymentForm: React.FC = () => {
             {isSubmitting ? (
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Calculating Plans...
+                {isAutoFilled ? 'Auto-calculating Plans...' : 'Calculating Plans...'}
               </div>
             ) : (
               'Calculate Payment Plans'
