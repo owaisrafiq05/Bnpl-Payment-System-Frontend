@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import type { PaymentPlansResponse } from '../context/PaymentFormContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
@@ -104,7 +105,29 @@ export class PaymentPlanService {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        
+        // Build detailed error message
+        let errorMessage = errorData.error || `HTTP error! status: ${response.status}`;
+        
+        // Add detailed error information if available
+        if (errorData.details) {
+          if (typeof errorData.details === 'string') {
+            errorMessage += `\n\nDetails: ${errorData.details}`;
+          } else if (errorData.details.greenPayResponse) {
+            // Handle GreenPay error details
+            const greenPayResponse = errorData.details.greenPayResponse;
+            if (greenPayResponse.resultDescription) {
+              errorMessage += `\n\nGreenPay Error: ${greenPayResponse.resultDescription}`;
+            }
+            if (greenPayResponse.verifyResultDescription && greenPayResponse.verifyResultDescription !== greenPayResponse.resultDescription) {
+              errorMessage += `\n\nVerification Error: ${greenPayResponse.verifyResultDescription}`;
+            }
+          } else if (errorData.details.message) {
+            errorMessage += `\n\nDetails: ${errorData.details.message}`;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       return await response.json();
@@ -149,6 +172,7 @@ export class PaymentPlanService {
       // Handle the new error response format
       const errorResponse = response as CreatePaymentPlanErrorResponse;
       const errorMessage = errorResponse.details?.message || errorResponse.error || 'Failed to create payment plan';
+      const reason = errorResponse.details?.reason || '';
       const suggestions = errorResponse.details?.suggestions || [];
       const greenPayResponse = errorResponse.details?.greenPayResponse;
       
@@ -166,8 +190,15 @@ export class PaymentPlanService {
       
       let fullErrorMessage = errorMessage;
       
-      // Add the specific GreenPay error reason
-      if (greenPayResponse?.resultDescription) {
+      // Add the specific reason if available and different from main message
+      if (reason && reason !== errorMessage) {
+        fullErrorMessage += `\n\nReason: ${reason}`;
+      }
+      
+      // Add the specific GreenPay error details
+      if (greenPayResponse?.verifyResultDescription) {
+        fullErrorMessage += `\n\nVerification Error: ${greenPayResponse.verifyResultDescription}`;
+      } else if (greenPayResponse?.resultDescription) {
         fullErrorMessage += `\n\nGreenPay Error: ${greenPayResponse.resultDescription}`;
       }
       
@@ -194,6 +225,8 @@ export class PaymentPlanService {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.log('API Error Response:', errorData);
+        toast.error(errorData.details.greenPayResponse.resultDescription, { duration: 4000 });
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
@@ -203,6 +236,7 @@ export class PaymentPlanService {
         // Handle the new error response format
         const errorResponse = result as CreatePaymentPlanErrorResponse;
         const errorMessage = errorResponse.details?.message || errorResponse.error || 'Failed to create payment plan';
+        const reason = errorResponse.details?.reason || '';
         const suggestions = errorResponse.details?.suggestions || [];
         const greenPayResponse = errorResponse.details?.greenPayResponse;
         
@@ -220,8 +254,15 @@ export class PaymentPlanService {
         
         let fullErrorMessage = errorMessage;
         
-        // Add the specific GreenPay error reason
-        if (greenPayResponse?.resultDescription) {
+        // Add the specific reason if available and different from main message
+        if (reason && reason !== errorMessage) {
+          fullErrorMessage += `\n\nReason: ${reason}`;
+        }
+        
+        // Add the specific GreenPay error details
+        if (greenPayResponse?.verifyResultDescription) {
+          fullErrorMessage += `\n\nVerification Error: ${greenPayResponse.verifyResultDescription}`;
+        } else if (greenPayResponse?.resultDescription) {
           fullErrorMessage += `\n\nGreenPay Error: ${greenPayResponse.resultDescription}`;
         }
         
@@ -229,6 +270,14 @@ export class PaymentPlanService {
           fullErrorMessage += `\n\nSuggestions:\n${suggestions.map(s => `• ${s}`).join('\n')}`;
         }
         
+        console.log('Constructed error message:', fullErrorMessage);
+        console.log('Error message parts:', {
+          errorMessage,
+          reason,
+          verifyResultDescription: greenPayResponse?.verifyResultDescription,
+          resultDescription: greenPayResponse?.resultDescription,
+          suggestions
+        });
         throw new Error(fullErrorMessage);
       }
 
@@ -263,6 +312,7 @@ export class PaymentPlanService {
         // Handle the new error response format
         const errorResponse = result as CreatePaymentPlanErrorResponse;
         const errorMessage = errorResponse.details?.message || errorResponse.error || 'Failed to process full payment';
+        const reason = errorResponse.details?.reason || '';
         const suggestions = errorResponse.details?.suggestions || [];
         const greenPayResponse = errorResponse.details?.greenPayResponse;
         
@@ -280,8 +330,15 @@ export class PaymentPlanService {
         
         let fullErrorMessage = errorMessage;
         
-        // Add the specific GreenPay error reason
-        if (greenPayResponse?.resultDescription) {
+        // Add the specific reason if available and different from main message
+        if (reason && reason !== errorMessage) {
+          fullErrorMessage += `\n\nReason: ${reason}`;
+        }
+        
+        // Add the specific GreenPay error details
+        if (greenPayResponse?.verifyResultDescription) {
+          fullErrorMessage += `\n\nVerification Error: ${greenPayResponse.verifyResultDescription}`;
+        } else if (greenPayResponse?.resultDescription) {
           fullErrorMessage += `\n\nGreenPay Error: ${greenPayResponse.resultDescription}`;
         }
         
@@ -289,6 +346,14 @@ export class PaymentPlanService {
           fullErrorMessage += `\n\nSuggestions:\n${suggestions.map(s => `• ${s}`).join('\n')}`;
         }
         
+        console.log('Constructed error message:', fullErrorMessage);
+        console.log('Error message parts:', {
+          errorMessage,
+          reason,
+          verifyResultDescription: greenPayResponse?.verifyResultDescription,
+          resultDescription: greenPayResponse?.resultDescription,
+          suggestions
+        });
         throw new Error(fullErrorMessage);
       }
 

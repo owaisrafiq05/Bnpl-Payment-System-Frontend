@@ -366,12 +366,19 @@ const CheckoutForm: React.FC = () => {
           setShowSuccessModal(true);
           toast.success('Payment processed successfully!');
         } else {
-          // Payment failed - show error
-          const errorMessage = directGreenPayResult.data.greenPayResponse.resultDescription || 
-                              directGreenPayResult.data.greenPayResponse.verifyResultDescription || 
-                              'Payment processing failed';
-          toast.error(`Payment failed: ${errorMessage}`);
-          throw new Error(`Payment failed: ${errorMessage}`);
+          // Payment failed - show detailed error
+          const greenPayResponse = directGreenPayResult.data.greenPayResponse;
+          const mainError = greenPayResponse.resultDescription || 'Payment processing failed';
+          const verificationError = greenPayResponse.verifyResultDescription;
+          
+          let fullErrorMessage = `Payment failed: ${mainError}`;
+          if (verificationError && verificationError !== mainError) {
+            fullErrorMessage += `\n\nVerification Error: ${verificationError}`;
+          }
+          
+          // Show detailed error message
+          toast.error(fullErrorMessage, { duration: 10000 });
+          throw new Error(fullErrorMessage);
         }
       } else {
         // Use create payment plan API for installment plans
@@ -424,31 +431,16 @@ const CheckoutForm: React.FC = () => {
       
       // Handle different types of errors
       let errorMessage = 'Failed to create payment plan';
-      
       if (error instanceof Error) {
         errorMessage = error.message;
+        console.log('Full error message:', errorMessage);
+        console.log('Error message length:', errorMessage.length);
         
-        // Check if the error message contains detailed information (from the new API format)
-        if (error.message.includes('Reason:') || error.message.includes('Suggestions:')) {
-          // The error message contains detailed information from the service
-          // Split the message to show main error and details separately
-          const lines = error.message.split('\n');
-          const mainError = lines[0];
-          const details = lines.slice(1).filter(line => line.trim());
-          
-          // Show main error first
-          toast.error(mainError);
-          
-          // Show details in a more readable format
-          if (details.length > 0) {
-            const detailsText = details.join('\n');
-            // Use a longer duration for detailed error messages
-            toast.error(detailsText, { duration: 8000 });
-          }
-        } else {
-          // Regular error message
-          toast.error(errorMessage);
-        }
+        // Always show the full error message - don't split it
+        // The toast library should handle long messages properly
+        console.log('About to show toast with message:', errorMessage);
+        
+        
       } else {
         toast.error(errorMessage);
       }
